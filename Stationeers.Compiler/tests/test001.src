@@ -1,0 +1,9 @@
+# The generator is activated when the battery charge drops below 50%.
+
+var battery = Device(StructureBattery, d0);
+var generator = Device(StructureSolidFuelGenerator, d1);
+
+while (1)
+{
+	generator.On = battery.Ratio < 0.5;
+}

@@ -1,0 +1,42 @@
+# If statements
+
+var a = 0;
+var b = 0;
+
+if (a)
+{
+	b = 1;
+}
+
+if (a)
+{
+	b = 2;
+}
+else
+{
+	b = 3;
+}
+
+
+if (a > 0)
+{
+	b = 4;
+}
+elif (a < 0)
+{
+	b = 5;
+}
+
+
+if (a > 0)
+{
+	b = 6;
+}
+elif (a < 0)
+{
+	b = 7;
+}
+else
+{
+	b = 8;
+}

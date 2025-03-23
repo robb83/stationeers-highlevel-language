@@ -1,0 +1,15 @@
+# Device configuration options
+
+# Directly attached device: type, port (db, d0, d1, d2, ... d9 )
+var memory = Device(StructureLogicMemory, d0);
+
+# All VolumnPump on network: type, batchMode
+var pump = Device(StructureVolumePump, Minimum);
+
+# All Named VolumePump on network: type, name, batchMode
+var sensor = Device(StructureGasSensor, "External Gas Sensor", Minimum);
+
+# You can get or set logicTypes through this configuration
+# variable_name . logicType
+var value = sensor.Temperature;
+pump.On = 1;

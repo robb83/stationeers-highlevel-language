@@ -1,0 +1,11 @@
+# All pumps on the network turn on when the external temperature drops below 410K and simultaneously write the temperature value to the attached memory logic
+
+var memory = Device(StructureLogicMemory, d0);
+var sensor = Device(StructureGasSensor, "External Gas Sensor", Minimum);
+var pump = Device(StructureVolumePump, Minimum);
+
+while (1)
+{
+	memory.Setting = sensor.Temperature;
+	pump.On = sensor.Temperature < 410;
+}
