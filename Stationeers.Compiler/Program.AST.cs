@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Stationeers.Compiler
+namespace Stationeers.Compiler.AST
 {
     public abstract class Node
     {
-        public abstract void Print(int depth = 0);
     }
 
     public enum ComparsionOperatorType
@@ -44,17 +43,6 @@ namespace Stationeers.Compiler
         {
             return Statements != null && Statements.Count > 0;
         }
-
-        public override void Print(int depth = 0)
-        {
-            if (Statements != null)
-            {
-                foreach (var s in Statements)
-                {
-                    s.Print(depth + 1);
-                }
-            }
-        }
     }
 
     public class BlockNode : Node
@@ -70,17 +58,6 @@ namespace Stationeers.Compiler
         {
             return Statements != null && Statements.Count > 0;
         }
-
-        public override void Print(int depth = 0)
-        {
-            if (Statements != null)
-            {
-                foreach (var s in Statements)
-                {
-                    s.Print(depth + 1);
-                }
-            }
-        }
     }
 
     public class VariableDeclerationNode : Node
@@ -93,60 +70,39 @@ namespace Stationeers.Compiler
             Identifier = identifier;
             Expression = expression;
         }
-
-        public override void Print(int depth = 0)
-        {
-            Console.WriteLine(new string(' ', depth * 2) + Identifier + " = ");
-            Expression.Print(depth + 1);
-        }
     }
 
     public class AssigmentNode : Node
     {
-        public String Identifier;
-        public String Property;
-        public Node Index;
+        public IdentifierNode Identifier;
         public Node Expression;
 
-        public AssigmentNode(string identifier, Node index, string property, Node expression)
+        public AssigmentNode(IdentifierNode identifier, Node expression)
         {
             Identifier = identifier;
-            Index = index;
-            Property = property;
             Expression = expression;
-        }
-
-        public override void Print(int depth = 0)
-        {
-            if (Property != null)
-            {
-                Console.WriteLine(new string(' ', depth * 2) + Identifier + "." + Property + " = ");
-            }
-            else
-            {
-                Console.WriteLine(new string(' ', depth * 2) + Identifier + " = ");
-            }
-
-            Expression.Print(depth + 1);
         }
     }
 
-    public class WhileStatementNode : Node
+    public class LoopNode : Node
+    {
+        public Node Statement;
+
+        public LoopNode(Node statement)
+        {
+            Statement = statement;
+        }
+    }
+
+    public class ConditionalLoopNode : Node
     {
         public Node Condition;
         public Node Statement;
 
-        public WhileStatementNode(Node condition, Node statement)
+        public ConditionalLoopNode(Node condition, Node statement)
         {
             Condition = condition;
             Statement = statement;
-        }
-
-        public override void Print(int depth = 0)
-        {
-            Console.WriteLine(new string(' ', depth * 2) + "while");
-            Condition.Print(depth + 1);
-            Statement.Print(depth + 1);
         }
     }
 
@@ -162,29 +118,14 @@ namespace Stationeers.Compiler
             Statement = statement;
             Alternate = alternate;
         }
-
-        public override void Print(int depth = 0)
-        {
-            Console.WriteLine(new string(' ', depth * 2) + "while");
-            Condition.Print(depth + 1);
-            Statement.Print(depth + 1);
-        }
     }
 
     public class BreakNode : Node
     {
-        public override void Print(int depth = 0)
-        {
-
-        }
     }
 
     public class ContinueNode : Node
     {
-        public override void Print(int depth = 0)
-        {
-
-        }
     }
 
     public class CallNode : Node
@@ -196,11 +137,6 @@ namespace Stationeers.Compiler
         {
             Identifier = identifier;
             Arguments = argumetns;
-        }
-
-        public override void Print(int depth = 0)
-        {
-
         }
     }
 
@@ -218,14 +154,9 @@ namespace Stationeers.Compiler
             Name = name;
             BatchMode = batchMode;
         }
-
-        public override void Print(int depth = 0)
-        {
-
-        }
     }
 
-    class StringNode : Node
+    public class StringNode : Node
     {
         public String Value;
 
@@ -233,14 +164,9 @@ namespace Stationeers.Compiler
         {
             Value = value;
         }
-
-        public override void Print(int depth = 0)
-        {
-
-        }
     }
 
-    class NumericNode : Node
+    public class NumericNode : Node
     {
         public String Value;
 
@@ -248,38 +174,23 @@ namespace Stationeers.Compiler
         {
             Value = value;
         }
-
-        public override void Print(int depth = 0)
-        {
-
-        }
     }
 
-    class IdentifierNode : Node
+    public class IdentifierNode : Node
     {
         public String Identifier;
         public String Property;
         public Node Index;
 
-        public IdentifierNode(string identifier)
-        {
-            Identifier = identifier;
-        }
-
-        public IdentifierNode(string identifier, Node index, string property)
+        public IdentifierNode(string identifier, Node index = null, string property = null)
         {
             Identifier = identifier;
             Index = index;
             Property = property;
         }
-
-        public override void Print(int depth = 0)
-        {
-
-        }
     }
 
-    class UnaryOpNode : Node
+    public class UnaryOpNode : Node
     {
         public Node Expression;
         public UnaryOperationType Operator;
@@ -289,14 +200,9 @@ namespace Stationeers.Compiler
             Expression = expression;
             Operator = op;
         }
-
-        public override void Print(int depth = 0)
-        {
-
-        }
     }
 
-    class BinaryOpNode : Node
+    public class BinaryOpNode : Node
     {
         public Node Left, Right;
         public OperatorType Operator;
@@ -307,14 +213,9 @@ namespace Stationeers.Compiler
             Operator = op;
             Right = right;
         }
-
-        public override void Print(int depth = 0)
-        {
-
-        }
     }
 
-    class ComparisonNode : Node
+    public class ComparisonNode : Node
     {
         public Node Left, Right;
         public ComparsionOperatorType Operator;
@@ -324,11 +225,6 @@ namespace Stationeers.Compiler
             Left = left;
             Operator = op;
             Right = right;
-        }
-
-        public override void Print(int depth = 0)
-        {
-
         }
     }
 }

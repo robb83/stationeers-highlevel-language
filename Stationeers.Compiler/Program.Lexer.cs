@@ -22,6 +22,7 @@ namespace Stationeers.Compiler
             ReservedKeywords.Add(Keywords.BREAK, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.CONTINUE, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.DEVICE, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.LOOP, TokenType.Keyword);
 
             ReservedKeywords.Add("nan", TokenType.Keyword);
             ReservedKeywords.Add("pinf", TokenType.Keyword);

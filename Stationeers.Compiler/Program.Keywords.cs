@@ -13,6 +13,7 @@ namespace Stationeers.Compiler
         public const String ELSE = "else";
         public const String RETURN = "return";
         public const String DEVICE = "Device";
+        public const String LOOP = "loop";
 
         public const String YIELD = "yield";
         public const String RAND = "rand";

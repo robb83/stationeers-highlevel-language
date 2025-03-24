@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Security.Cryptography;
+using Stationeers.Compiler.AST;
 
 namespace Stationeers.Compiler
 {
@@ -91,9 +89,13 @@ namespace Stationeers.Compiler
             {
                 return ParseVariableDecleration();
             }
+            else if (CheckCurrent(TokenType.Keyword, Keywords.LOOP))
+            {
+                return ParseLoopStatement();
+            }
             else if (CheckCurrent(TokenType.Keyword, Keywords.WHILE))
             {
-                return ParseWhileStatement();
+                return ParseConditionalLoopStatement();
             }
             else if (CheckCurrent(TokenType.Keyword, Keywords.IF))
             {
@@ -224,7 +226,14 @@ namespace Stationeers.Compiler
             return !(String.IsNullOrEmpty(value) || value.Length != 2 || value[0] != 'd' || !(value[1] == 'b' || Char.IsDigit(value[1])));
         }
 
-        private Node ParseWhileStatement()
+        private Node ParseLoopStatement()
+        {
+            Consume(); // loop
+            var statement = ParseStatement();
+            return new LoopNode(statement);
+        }
+
+        private Node ParseConditionalLoopStatement()
         {
             Consume(); // while
             ConsumeIf(TokenType.Symbol_LeftParentheses); // (
@@ -234,7 +243,7 @@ namespace Stationeers.Compiler
             ConsumeIf(TokenType.Symbol_RightParentheses); // )
 
             var statement = ParseStatement();
-            return new WhileStatementNode(condition, statement);
+            return new ConditionalLoopNode(condition, statement);
         }
 
         private Node ParseFunctionCall(bool statement = false)
@@ -358,7 +367,7 @@ namespace Stationeers.Compiler
 
             ConsumeIf(TokenType.Symbol_Semicolon);
 
-            return new AssigmentNode(identifier.Value, index, property?.Value, expr);
+            return new AssigmentNode(new IdentifierNode(identifier.Value, index, property?.Value), expr);
         }
 
         private Node ParseVariableDecleration()

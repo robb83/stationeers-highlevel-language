@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO.Hashing;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using static Stationeers.Compiler.Program;
+using Stationeers.Compiler.AST;
 
 namespace Stationeers.Compiler
 {
@@ -84,7 +82,7 @@ namespace Stationeers.Compiler
 
                         break;
                     }
-                case WhileStatementNode wsn:
+                case ConditionalLoopNode cln:
                     {
                         var label1 = GenerateLabel("while_start");
                         var label2 = GenerateLabel("while_end");
@@ -93,9 +91,27 @@ namespace Stationeers.Compiler
                         _breakPoints.Push(label2);
 
                         Console.WriteLine(label1 + ":");
-                        GenerateMipsCode(wsn.Condition);
+                        GenerateMipsCode(cln.Condition);
                         Console.WriteLine("blt r0 1 " + label2);
-                        GenerateMipsCode(wsn.Statement);
+                        GenerateMipsCode(cln.Statement);
+                        Console.WriteLine("j " + label1);
+                        Console.WriteLine(label2 + ":");
+
+                        _continuePoints.Pop();
+                        _breakPoints.Pop();
+
+                        break;
+                    }
+                case LoopNode ln:
+                    {
+                        var label1 = GenerateLabel("loop_start");
+                        var label2 = GenerateLabel("loop_end");
+
+                        _continuePoints.Push(label1);
+                        _breakPoints.Push(label2);
+
+                        Console.WriteLine(label1 + ":");
+                        GenerateMipsCode(ln.Statement);
                         Console.WriteLine("j " + label1);
                         Console.WriteLine(label2 + ":");
 
@@ -123,6 +139,7 @@ namespace Stationeers.Compiler
                         GenerateMipsCode(bop.Left);
                         Console.WriteLine($"move r{r} r0");
                         GenerateMipsCode(bop.Right);
+
                         switch (bop.Operator)
                         {
                             case OperatorType.OpMul:
@@ -272,24 +289,26 @@ namespace Stationeers.Compiler
                     }
                 case AssigmentNode an:
                     {
-                        if (_devices.TryGetValue(an.Identifier, out DeviceConfigNode dcn))
+                        var identifier = an.Identifier;
+
+                        if (_devices.TryGetValue(identifier.Identifier, out DeviceConfigNode dcn))
                         {
-                            if (String.IsNullOrEmpty(an.Property))
+                            if (String.IsNullOrEmpty(identifier.Property))
                             {
                                 throw new Exception("Missing logicType or slotLogicType.");
                             }
 
                             GenerateMipsCode(an.Expression);
 
-                            if (an.Index != null)
+                            if (identifier.Index != null)
                             {
                                 String indexValue = null;
 
-                                if (an.Index is NumericNode nn)
+                                if (identifier.Index is NumericNode nn)
                                 {
                                     indexValue = nn.Value;
                                 }
-                                else if (an.Index is IdentifierNode iidn)
+                                else if (identifier.Index is IdentifierNode iidn)
                                 {
                                     var r = GetVariable(iidn.Identifier);
                                     indexValue = "r" + r;
@@ -301,7 +320,7 @@ namespace Stationeers.Compiler
 
                                 if (dcn.Port != null)
                                 {
-                                    Console.WriteLine($"ss {dcn.Port} {indexValue} {an.Property} r0");
+                                    Console.WriteLine($"ss {dcn.Port} {indexValue} {identifier.Property} r0");
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
@@ -310,7 +329,7 @@ namespace Stationeers.Compiler
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sbs {GenerateHashValue(dcn.Type)} {indexValue} {an.Property} r0");
+                                    Console.WriteLine($"sbs {GenerateHashValue(dcn.Type)} {indexValue} {identifier.Property} r0");
                                 }
                                 else
                                 {
@@ -321,15 +340,15 @@ namespace Stationeers.Compiler
                             {
                                 if (dcn.Port != null)
                                 {
-                                    Console.WriteLine($"s {dcn.Port} {an.Property} r0");
+                                    Console.WriteLine($"s {dcn.Port} {identifier.Property} r0");
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sbn {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {an.Property} r0");
+                                    Console.WriteLine($"sbn {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {identifier.Property} r0");
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sb {GenerateHashValue(dcn.Type)} {an.Property} r0");
+                                    Console.WriteLine($"sb {GenerateHashValue(dcn.Type)} {identifier.Property} r0");
                                 }
                                 else
                                 {
@@ -340,7 +359,7 @@ namespace Stationeers.Compiler
                         else
                         {
                             GenerateMipsCode(an.Expression);
-                            var r = GetVariable(an.Identifier);
+                            var r = GetVariable(identifier.Identifier);
                             Console.WriteLine($"move r{r} r0");
                         }
                         break;
