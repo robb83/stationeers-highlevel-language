@@ -1,0 +1,5 @@
+var memory = Device(StructureLogicMemory, d0);
+memory[0].On = 200;
+
+var x = 1;
+memory[x].On = 100;

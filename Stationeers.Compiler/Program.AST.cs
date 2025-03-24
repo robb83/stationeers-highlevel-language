@@ -105,11 +105,13 @@ namespace Stationeers.Compiler
     {
         public String Identifier;
         public String Property;
+        public Node Index;
         public Node Expression;
 
-        public AssigmentNode(string identifier, string property, Node expression)
+        public AssigmentNode(string identifier, Node index, string property, Node expression)
         {
             Identifier = identifier;
+            Index = index;
             Property = property;
             Expression = expression;
         }
@@ -185,6 +187,23 @@ namespace Stationeers.Compiler
         }
     }
 
+    public class CallNode : Node
+    {
+        public String Identifier;
+        public List<Node> Arguments;
+
+        public CallNode(String identifier, List<Node> argumetns)
+        {
+            Identifier = identifier;
+            Arguments = argumetns;
+        }
+
+        public override void Print(int depth = 0)
+        {
+
+        }
+    }
+
     public class DeviceConfigNode : Node
     {
         public String Type;
@@ -240,15 +259,17 @@ namespace Stationeers.Compiler
     {
         public String Identifier;
         public String Property;
+        public Node Index;
 
         public IdentifierNode(string identifier)
         {
             Identifier = identifier;
         }
 
-        public IdentifierNode(string identifier, string property)
+        public IdentifierNode(string identifier, Node index, string property)
         {
             Identifier = identifier;
+            Index = index;
             Property = property;
         }
 

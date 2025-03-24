@@ -5,23 +5,67 @@ namespace Stationeers.Compiler
 {
     public class Lexer
     {
-        private static readonly Dictionary<string, TokenType> Keywords;
+        private static readonly Dictionary<string, TokenType> ReservedKeywords;
 
         private string _code;
         private int _position;
 
         static Lexer()
         {
-            Keywords = new Dictionary<string, TokenType>();
-            Keywords.Add("var", TokenType.Keyword);
-            Keywords.Add("while", TokenType.Keyword);
-            Keywords.Add("if", TokenType.Keyword);
-            Keywords.Add("elif", TokenType.Keyword);
-            Keywords.Add("else", TokenType.Keyword);
-            Keywords.Add("return", TokenType.Keyword);
-            Keywords.Add("break", TokenType.Keyword);
-            Keywords.Add("continue", TokenType.Keyword);
-            Keywords.Add("Device", TokenType.Keyword);
+            ReservedKeywords = new Dictionary<string, TokenType>();
+            ReservedKeywords.Add(Keywords.VAR, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.WHILE, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.IF, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.ELIF, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.ELSE, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.RETURN, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.BREAK, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.CONTINUE, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.DEVICE, TokenType.Keyword);
+
+            ReservedKeywords.Add("nan", TokenType.Keyword);
+            ReservedKeywords.Add("pinf", TokenType.Keyword);
+            ReservedKeywords.Add("ninf", TokenType.Keyword);
+            ReservedKeywords.Add("pi", TokenType.Keyword);
+            ReservedKeywords.Add("epsilon", TokenType.Keyword);
+            ReservedKeywords.Add("dag2rad", TokenType.Keyword);
+            ReservedKeywords.Add("rad2deg", TokenType.Keyword);
+
+            ReservedKeywords.Add(Keywords.ABS, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.ACOS, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.ASIN, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.ATAN, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.ATAN2, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.CEIL, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.COS, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.EXP, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.FLOOR, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.LOG, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.MAX, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.MIN, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.MOD, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.RAND, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.ROUND, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.SIN, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.SQRT, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.TAN, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.TRUNC, TokenType.Keyword);
+
+            ReservedKeywords.Add("sla", TokenType.Keyword);
+            ReservedKeywords.Add("sll", TokenType.Keyword);
+            ReservedKeywords.Add("sra", TokenType.Keyword);
+            ReservedKeywords.Add("srl", TokenType.Keyword);
+
+            ReservedKeywords.Add(Keywords.SLEEP, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.YIELD, TokenType.Keyword);
+            ReservedKeywords.Add("select", TokenType.Keyword);
+            ReservedKeywords.Add("hcf", TokenType.Keyword);
+
+            ReservedKeywords.Add(Keywords.AND, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.NOR, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.NOT, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.OR, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.XOR, TokenType.Keyword);
         }
 
         public Lexer(string code)
@@ -68,7 +112,7 @@ namespace Stationeers.Compiler
                 if (char.IsLetter(current) || current == '_')
                 {
                     string identifier = ReadIdentifier();
-                    if (Keywords.ContainsKey(identifier))
+                    if (ReservedKeywords.ContainsKey(identifier))
                     {
                         tokens.Add(new Token(TokenType.Keyword, identifier));
                     }
@@ -150,6 +194,12 @@ namespace Stationeers.Compiler
                         break;
                     case ';':
                         tokens.Add(new Token(TokenType.Symbol_Semicolon, current.ToString()));
+                        break;
+                    case '[':
+                        tokens.Add(new Token(TokenType.Symbol_LeftBracket, current.ToString()));
+                        break;
+                    case ']':
+                        tokens.Add(new Token(TokenType.Symbol_RightBracket, current.ToString()));
                         break;
                     default:
                         throw new Exception($"Unexpected character: {current}");

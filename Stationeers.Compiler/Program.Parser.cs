@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Security.Cryptography;
 
 namespace Stationeers.Compiler
 {
-    public class Parser
+    public partial class Parser
     {
         private readonly List<Token> _tokens;
         private int _position = 0;
@@ -11,31 +14,22 @@ namespace Stationeers.Compiler
         private List<TokenType> _comparsionOperators;
         private List<TokenType> _termOperators;
         private List<TokenType> _factorOperators;
-
-        public static class Keywords
-        {
-            public const String VAR = "var";
-            public const String WHILE= "while";
-            public const String BREAK = "break";
-            public const String CONTINUE = "continue";
-            public const String IF = "if";
-            public const String ELIF = "elif";
-            public const String ELSE = "else";
-            public const String DEVICE = "Device";
-        }
+        private List<String> _builtInFunctions;
 
         public Parser(List<Token> tokens)
         {
             this._tokens = tokens;
             this._variables = new Dictionary<string, string>();
 
-            _comparsionOperators = new List<TokenType>();
-            _comparsionOperators.Add(TokenType.Symbol_EqualEqual);
-            _comparsionOperators.Add(TokenType.Symbol_NotEqual);
-            _comparsionOperators.Add(TokenType.Symbol_LessThen);
-            _comparsionOperators.Add(TokenType.Symbol_LessThenOrEqual);
-            _comparsionOperators.Add(TokenType.Symbol_GreaterThen);
-            _comparsionOperators.Add(TokenType.Symbol_GreaterThenOrEqual);
+            _comparsionOperators = new List<TokenType>
+            {
+                TokenType.Symbol_EqualEqual,
+                TokenType.Symbol_NotEqual,
+                TokenType.Symbol_LessThen,
+                TokenType.Symbol_LessThenOrEqual,
+                TokenType.Symbol_GreaterThen,
+                TokenType.Symbol_GreaterThenOrEqual
+            };
 
             _termOperators = new List<TokenType>
             {
@@ -43,9 +37,39 @@ namespace Stationeers.Compiler
                 TokenType.Symbol_Minus
             };
 
-            _factorOperators = new List<TokenType>();
-            _factorOperators.Add(TokenType.Symbol_Asterik);
-            _factorOperators.Add(TokenType.Symbol_Slash);
+            _factorOperators = new List<TokenType>
+            {
+                TokenType.Symbol_Asterik,
+                TokenType.Symbol_Slash
+            };
+
+            _builtInFunctions = new List<string>
+            {
+                Keywords.RAND,
+                Keywords.ABS,
+                Keywords.COS,
+                Keywords.ASIN,
+                Keywords.ATAN,
+                Keywords.ATAN2,
+                Keywords.CEIL,
+                Keywords.COS,
+                Keywords.EXP,
+                Keywords.FLOOR,
+                Keywords.LOG,
+                Keywords.ROUND,
+                Keywords.SIN,
+                Keywords.SQRT,
+                Keywords.TAN,
+                Keywords.TRUNC,
+                Keywords.MAX,
+                Keywords.MIN,
+                Keywords.MOD,
+                Keywords.XOR,
+                Keywords.NOR,
+                Keywords.NOT,
+                Keywords.AND,
+                Keywords.OR
+            };
         }
 
         public ProgramNode Parse()
@@ -87,6 +111,14 @@ namespace Stationeers.Compiler
             {
                 return ParseDeviceConfig();
             }
+            else if (CheckCurrent(TokenType.Keyword, Keywords.YIELD))
+            {
+                return ParseFunctionCall(true);
+            }
+            else if (CheckCurrent(TokenType.Keyword, Keywords.SLEEP))
+            {
+                return ParseFunctionCall(true);
+            }
             else if (_tokens[_position].Type == TokenType.Identifier)
             {
                 return ParseAssigment();
@@ -107,7 +139,7 @@ namespace Stationeers.Compiler
             }
             else
             {
-                throw new Exception($"Syntax error or not supported token.");
+                throw new Exception($"Syntax error or not supported token: { _tokens[_position].Type }, {_tokens[_position].Value }.");
             }
         }
 
@@ -205,6 +237,33 @@ namespace Stationeers.Compiler
             return new WhileStatementNode(condition, statement);
         }
 
+        private Node ParseFunctionCall(bool statement = false)
+        {
+            var arguments = new List<Node>();
+            var identifier = Consume(); // keyword or identifier
+            ConsumeIf(TokenType.Symbol_LeftParentheses);
+
+            if (!CheckCurrent(TokenType.Symbol_RightParentheses))
+            {
+                arguments.Add(ParseExpression());
+            }
+
+            while (Until(TokenType.Symbol_RightParentheses))
+            {
+                ConsumeIf(TokenType.Symbol_Comma);
+                arguments.Add(ParseExpression());
+            }
+
+            ConsumeIf(TokenType.Symbol_RightParentheses);
+
+            if (statement)
+            {
+                ConsumeIf(TokenType.Symbol_Semicolon);
+            }
+
+            return new CallNode(identifier.Value, arguments);
+        }
+
         private Node ParseBreakNode()
         {
             Consume(); // continue
@@ -253,16 +312,44 @@ namespace Stationeers.Compiler
         {
             Token identifier = _tokens[_position++];
             Token property = null;
+            Node index = null;
 
             if (!_variables.ContainsKey(identifier.Value))
             {
                 throw new Exception($"Variable not declared: {identifier.Value}.");
             }
 
+            if (CheckCurrent(TokenType.Symbol_LeftBracket))
+            {
+                Consume(); // [
+
+                if (CheckCurrent(TokenType.Number))
+                {
+                    var number = Consume();
+                    index = new NumericNode(number.Value);
+                } 
+                else if (CheckCurrent(TokenType.Identifier))
+                {
+                    var indeIdentifier = Consume();
+                    index = new IdentifierNode(indeIdentifier.Value);
+                }
+                else
+                {
+                    throw new Exception("Index missing or invalid.");
+                }
+
+                ConsumeIf(TokenType.Symbol_RightBracket); // ]
+            }
+
             if (CheckCurrent(TokenType.Symbol_Dot))
             {
-                Consume();
+                Consume(); // .
                 property = ConsumeIf(TokenType.Identifier);
+            }
+
+            if (index != null && property == null)
+            {
+                throw new Exception("Not supported expression: index without slotLogicType.");
             }
 
             ConsumeIf(TokenType.Symbol_Equal); // =
@@ -271,7 +358,7 @@ namespace Stationeers.Compiler
 
             ConsumeIf(TokenType.Symbol_Semicolon);
 
-            return new AssigmentNode(identifier.Value, property?.Value, expr);
+            return new AssigmentNode(identifier.Value, index, property?.Value, expr);
         }
 
         private Node ParseVariableDecleration()
@@ -368,15 +455,38 @@ namespace Stationeers.Compiler
             {
                 Token identifier = _tokens[_position++];
                 Token property = null;
+                Node index = null;
 
                 if (!_variables.ContainsKey(identifier.Value))
                 {
                     throw new Exception($"Variable not declared: {identifier.Value}.");
                 }
 
+                if (CheckCurrent(TokenType.Symbol_LeftBracket))
+                {
+                    Consume(); // [
+
+                    if (CheckCurrent(TokenType.Number))
+                    {
+                        var number = Consume();
+                        index = new NumericNode(number.Value);
+                    }
+                    else if (CheckCurrent(TokenType.Identifier))
+                    {
+                        var indeIdentifier = Consume();
+                        index = new IdentifierNode(indeIdentifier.Value);
+                    }
+                    else
+                    {
+                        throw new Exception($"Index missing or invalid ({identifier.Value}).");
+                    }
+
+                    ConsumeIf(TokenType.Symbol_RightBracket); // ]
+                }
+
                 if (CheckCurrent(TokenType.Symbol_Dot))
                 {
-                    Consume();
+                    Consume(); // .
 
                     if (CheckCurrent(TokenType.Identifier))
                     {
@@ -388,12 +498,22 @@ namespace Stationeers.Compiler
                     }
                 }
 
-                return new IdentifierNode(identifier.Value, property?.Value);
+                if (index != null && property == null)
+                {
+                    throw new Exception("Not supported expression: index without slotLogicType.");
+                }
+
+                return new IdentifierNode(identifier.Value, index, property?.Value);
             }
 
             if (CheckCurrent(TokenType.Keyword, Keywords.DEVICE))
             {
                 return ParseDeviceConfig();
+            }
+
+            if (CheckCurrent(TokenType.Keyword, _builtInFunctions))
+            {
+                return ParseFunctionCall();
             }
 
             if (CheckCurrent(TokenType.Symbol_LeftParentheses))
@@ -402,9 +522,9 @@ namespace Stationeers.Compiler
 
                 Node expr = ParseExpression();
 
-                if (!CheckCurrent(TokenType.Symbol_LeftParentheses))
+                if (!CheckCurrent(TokenType.Symbol_RightParentheses))
                 {
-                    throw new Exception();
+                    throw new Exception("Unexpected token.");
                 }
 
                 Consume();
@@ -474,6 +594,11 @@ namespace Stationeers.Compiler
         private bool CheckCurrent(TokenType type, String value)
         {
             return _position < _tokens.Count && _tokens[_position].Type == type && String.Compare(value, _tokens[_position].Value, StringComparison.Ordinal) == 0;
+        }
+
+        private bool CheckCurrent(TokenType type, List<String> keywords)
+        {
+            return _position < _tokens.Count && _tokens[_position].Type == type && keywords.Contains(_tokens[_position].Value);
         }
 
         private ComparsionOperatorType ConvertToComparsion(TokenType tt)

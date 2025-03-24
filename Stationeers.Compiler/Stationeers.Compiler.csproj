@@ -59,6 +59,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Program.Keywords.cs" />
     <Compile Include="Program.AST.cs" />
     <Compile Include="Program.Lexer.cs" />
     <Compile Include="Program.Main.cs" />
@@ -71,6 +72,12 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="tests\test006.src">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="tests\test005.src">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="tests\test004.src">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

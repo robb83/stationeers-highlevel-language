@@ -26,6 +26,8 @@
         Symbol_Plus,
         Symbol_Minus,
         Symbol_Asterik,
-        Symbol_Slash
+        Symbol_Slash,
+        Symbol_LeftBracket,
+        Symbol_RightBracket
     }
 }

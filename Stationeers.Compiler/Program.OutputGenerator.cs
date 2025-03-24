@@ -10,30 +10,30 @@ namespace Stationeers.Compiler
 {
     public class OutputGenerator
     {
-        const int MIN_REGISTER = 2;
+        const int MIN_REGISTER = 1;
         const int MAX_REGISTER = 15;
         const int STACK_SIZE = 512;
 
-        Dictionary<String, int> labelCounter;
-        Stack<String> breakPoints;
-        Stack<String> continuePoints;
-        Dictionary<String, DeviceConfigNode> devices;
-        bool[] registers = new bool[18];
-        Dictionary<String, int> variables = new Dictionary<string, int>();
-        Node programNode;
+        Dictionary<String, int> _labelCounter;
+        Stack<String> _breakPoints;
+        Stack<String> _continuePoints;
+        Dictionary<String, DeviceConfigNode> _devices;
+        bool[] _registers = new bool[18];
+        Dictionary<String, int> _variables = new Dictionary<string, int>();
+        Node _programNode;
 
         public OutputGenerator(Node programNode)
         {
-            this.labelCounter = new Dictionary<string, int>();
-            this.breakPoints = new Stack<string>();
-            this.continuePoints = new Stack<string>();
-            this.devices = new Dictionary<string, DeviceConfigNode>();
-            this.programNode = programNode;
+            _labelCounter = new Dictionary<string, int>();
+            _breakPoints = new Stack<string>();
+            _continuePoints = new Stack<string>();
+            _devices = new Dictionary<string, DeviceConfigNode>();
+            _programNode = programNode;
         }
 
         public void Print()
         {
-            GenerateMipsCode(programNode);
+            GenerateMipsCode(_programNode);
         }
 
         private void GenerateMipsCode(Node node)
@@ -89,8 +89,8 @@ namespace Stationeers.Compiler
                         var label1 = GenerateLabel("while_start");
                         var label2 = GenerateLabel("while_end");
 
-                        continuePoints.Push(label1);
-                        breakPoints.Push(label2);
+                        _continuePoints.Push(label1);
+                        _breakPoints.Push(label2);
 
                         Console.WriteLine(label1 + ":");
                         GenerateMipsCode(wsn.Condition);
@@ -99,41 +99,43 @@ namespace Stationeers.Compiler
                         Console.WriteLine("j " + label1);
                         Console.WriteLine(label2 + ":");
 
-                        continuePoints.Pop();
-                        breakPoints.Pop();
+                        _continuePoints.Pop();
+                        _breakPoints.Pop();
 
                         break;
                     }
                 case BreakNode bn:
                     {
-                        var jp = breakPoints.Peek();
+                        var jp = _breakPoints.Peek();
                         Console.WriteLine("j " + jp);
                         break;
                     }
                 case ContinueNode cn:
                     {
-                        var jp = continuePoints.Peek();
+                        var jp = _continuePoints.Peek();
                         Console.WriteLine("j " + jp);
                         break;
                     }
                 case BinaryOpNode bop:
                     {
+                        int r = ReserveRegister();
+
                         GenerateMipsCode(bop.Left);
-                        Console.WriteLine("move r1 r0");
+                        Console.WriteLine($"move r{r} r0");
                         GenerateMipsCode(bop.Right);
                         switch (bop.Operator)
                         {
                             case OperatorType.OpMul:
-                                Console.WriteLine("mul r0 r1 r0");
+                                Console.WriteLine($"mul r0 r{r} r0");
                                 break;
                             case OperatorType.OpDiv:
-                                Console.WriteLine("div r0 r1 r0");
+                                Console.WriteLine($"div r0 r{r} r0");
                                 break;
                             case OperatorType.OpAdd:
-                                Console.WriteLine("add r0 r1 r0");
+                                Console.WriteLine($"add r0 r{r} r0");
                                 break;
                             case OperatorType.OpSub:
-                                Console.WriteLine("sub r0 r1 r0");
+                                Console.WriteLine($"sub r0 r{r} r0");
                                 break;
                             default:
                                 throw new Exception($"Not supported Operator: {bop.Operator}.");
@@ -142,28 +144,30 @@ namespace Stationeers.Compiler
                     }
                 case ComparisonNode cop:
                     {
+                        int r = ReserveRegister();
+
                         GenerateMipsCode(cop.Left);
-                        Console.WriteLine("move r1 r0");
+                        Console.WriteLine($"move r{r} r0");
                         GenerateMipsCode(cop.Right);
                         switch (cop.Operator)
                         {
                             case ComparsionOperatorType.OpEqual:
-                                Console.WriteLine("seq r0 r1 r0");
+                                Console.WriteLine($"seq r0 r{r} r0");
                                 break;
                             case ComparsionOperatorType.OpNotEqual:
-                                Console.WriteLine("sne r0 r1 r0");
+                                Console.WriteLine($"sne r0 r{r} r0");
                                 break;
                             case ComparsionOperatorType.OpLess:
-                                Console.WriteLine("slt r0 r1 r0");
+                                Console.WriteLine($"slt r0 r{r} r0");
                                 break;
                             case ComparsionOperatorType.OpLessOrEqual:
-                                Console.WriteLine("sle r0 r1 r0");
+                                Console.WriteLine($"sle r0 r{r} r0");
                                 break;
                             case ComparsionOperatorType.OpGreater:
-                                Console.WriteLine("sgt r0 r1 r0");
+                                Console.WriteLine($"sgt r0 r{r} r0");
                                 break;
                             case ComparsionOperatorType.OpGreaterOrEqual:
-                                Console.WriteLine("sge r0 r1 r0");
+                                Console.WriteLine($"sge r0 r{r} r0");
                                 break;
                             default:
                                 throw new Exception($"Not supported comparsion operator: {cop.Operator}.");
@@ -177,28 +181,66 @@ namespace Stationeers.Compiler
                     }
                 case IdentifierNode idn:
                     {
-                        if (devices.TryGetValue(idn.Identifier, out DeviceConfigNode dcn))
+                        if (_devices.TryGetValue(idn.Identifier, out DeviceConfigNode dcn))
                         {
                             if (String.IsNullOrEmpty(idn.Property))
                             {
-                                throw new Exception("Missing logicType.");
+                                throw new Exception("Missing logicType or slotLogicType.");
                             }
 
-                            if (dcn.Port != null)
+                            if (idn.Index != null)
                             {
-                                Console.WriteLine($"l r0 {dcn.Port} {idn.Property}");
-                            }
-                            else if (dcn.Name != null && dcn.BatchMode != null)
-                            {
-                                Console.WriteLine($"lbn r0 {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {idn.Property} {dcn.BatchMode}");
-                            }
-                            else if (dcn.BatchMode != null)
-                            {
-                                Console.WriteLine($"lb r0 {GenerateHashValue(dcn.Type)} {idn.Property} {dcn.BatchMode}");
+                                String indexValue = null;
+
+                                if (idn.Index is NumericNode nn)
+                                {
+                                    indexValue = nn.Value;
+                                }
+                                else if (idn.Index is IdentifierNode iidn)
+                                {
+                                    var r = GetVariable(iidn.Identifier);
+                                    indexValue = "r" + r;
+                                }
+                                else
+                                {
+                                    throw new Exception("Not supported index expression.");
+                                }
+
+                                if (dcn.Port != null)
+                                {
+                                    Console.WriteLine($"ls r0 {dcn.Port} {indexValue} {idn.Property}");
+                                }
+                                else if (dcn.Name != null && dcn.BatchMode != null)
+                                {
+                                    Console.WriteLine($"lbns r0 {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {indexValue} {idn.Property} {dcn.BatchMode}");
+                                }
+                                else if (dcn.BatchMode != null)
+                                {
+                                    Console.WriteLine($"lbs r0 {GenerateHashValue(dcn.Type)} {indexValue} {idn.Property} {dcn.BatchMode}");
+                                }
+                                else
+                                {
+                                    throw new Exception("Not supported Device Configuration.");
+                                }
                             }
                             else
                             {
-                                throw new Exception("Not supported Device Configuration.");
+                                if (dcn.Port != null)
+                                {
+                                    Console.WriteLine($"l r0 {dcn.Port} {idn.Property}");
+                                }
+                                else if (dcn.Name != null && dcn.BatchMode != null)
+                                {
+                                    Console.WriteLine($"lbn r0 {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {idn.Property} {dcn.BatchMode}");
+                                }
+                                else if (dcn.BatchMode != null)
+                                {
+                                    Console.WriteLine($"lb r0 {GenerateHashValue(dcn.Type)} {idn.Property} {dcn.BatchMode}");
+                                }
+                                else
+                                {
+                                    throw new Exception("Not supported Device Configuration.");
+                                }
                             }
                         }
                         else
@@ -211,14 +253,14 @@ namespace Stationeers.Compiler
                     }
                 case VariableDeclerationNode vdn:
                     {
-                        if (devices.ContainsKey(vdn.Identifier) || HasVariable(vdn.Identifier))
+                        if (_devices.ContainsKey(vdn.Identifier) || HasVariable(vdn.Identifier))
                         {
                             throw new Exception($"Variable already declared: {vdn.Identifier}.");
                         }
 
                         if (vdn.Expression is DeviceConfigNode dcn)
                         {
-                            devices[vdn.Identifier] = dcn;
+                            _devices[vdn.Identifier] = dcn;
                         }
                         else
                         {
@@ -230,30 +272,69 @@ namespace Stationeers.Compiler
                     }
                 case AssigmentNode an:
                     {
-                        if (devices.TryGetValue(an.Identifier, out DeviceConfigNode dcn))
+                        if (_devices.TryGetValue(an.Identifier, out DeviceConfigNode dcn))
                         {
                             if (String.IsNullOrEmpty(an.Property))
                             {
-                                throw new Exception("Missing logicType.");
+                                throw new Exception("Missing logicType or slotLogicType.");
                             }
 
                             GenerateMipsCode(an.Expression);
 
-                            if (dcn.Port != null)
+                            if (an.Index != null)
                             {
-                                Console.WriteLine($"s {dcn.Port} {an.Property} r0");
-                            }
-                            else if (dcn.Name != null && dcn.BatchMode != null)
-                            {
-                                Console.WriteLine($"sbn {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {an.Property} r0");
-                            }
-                            else if (dcn.BatchMode != null)
-                            {
-                                Console.WriteLine($"sb {GenerateHashValue(dcn.Type)} {an.Property} r0");
+                                String indexValue = null;
+
+                                if (an.Index is NumericNode nn)
+                                {
+                                    indexValue = nn.Value;
+                                }
+                                else if (an.Index is IdentifierNode iidn)
+                                {
+                                    var r = GetVariable(iidn.Identifier);
+                                    indexValue = "r" + r;
+                                }
+                                else
+                                {
+                                    throw new Exception("Not supported index expression.");
+                                }
+
+                                if (dcn.Port != null)
+                                {
+                                    Console.WriteLine($"ss {dcn.Port} {indexValue} {an.Property} r0");
+                                }
+                                else if (dcn.Name != null && dcn.BatchMode != null)
+                                {
+                                    throw new Exception("Not supported operation.");
+                                    // Console.WriteLine($"sbns {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {indexValue} {an.Property} r0");
+                                }
+                                else if (dcn.BatchMode != null)
+                                {
+                                    Console.WriteLine($"sbs {GenerateHashValue(dcn.Type)} {indexValue} {an.Property} r0");
+                                }
+                                else
+                                {
+                                    throw new Exception("Not supported Device Configuration.");
+                                }
                             }
                             else
                             {
-                                throw new Exception("Not supported Device Configuration.");
+                                if (dcn.Port != null)
+                                {
+                                    Console.WriteLine($"s {dcn.Port} {an.Property} r0");
+                                }
+                                else if (dcn.Name != null && dcn.BatchMode != null)
+                                {
+                                    Console.WriteLine($"sbn {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {an.Property} r0");
+                                }
+                                else if (dcn.BatchMode != null)
+                                {
+                                    Console.WriteLine($"sb {GenerateHashValue(dcn.Type)} {an.Property} r0");
+                                }
+                                else
+                                {
+                                    throw new Exception("Not supported Device Configuration.");
+                                }
                             }
                         }
                         else
@@ -262,6 +343,60 @@ namespace Stationeers.Compiler
                             var r = GetVariable(an.Identifier);
                             Console.WriteLine($"move r{r} r0");
                         }
+                        break;
+                    }
+                case CallNode cn:
+                    {
+                        if (String.Compare(Keywords.SLEEP, cn.Identifier, StringComparison.Ordinal) == 0)
+                        {
+                            if (cn.Arguments == null || cn.Arguments.Count != 1)
+                            {
+                                throw new Exception("");
+                            }
+
+                            GenerateMipsCode(cn.Arguments[0]);
+                            Console.WriteLine($"sleep r0");
+                        }
+                        else if (String.Compare(Keywords.YIELD, cn.Identifier, StringComparison.Ordinal) == 0)
+                        {
+                            if (cn.Arguments != null && cn.Arguments.Count != 0)
+                            {
+                                throw new Exception("");
+                            }
+
+                            Console.WriteLine($"yield");
+                        }
+                        else
+                        {
+                            List<int> reservedRegisters = new List<int>();
+                            String callArguments = "";
+
+                            if (cn.Arguments != null && cn.Arguments.Count > 0)
+                            {
+                                callArguments += " r0";
+                                for (int a = 0; a < cn.Arguments.Count; ++a)
+                                {
+                                    GenerateMipsCode(cn.Arguments[a]);
+
+                                    if (a + 1 < cn.Arguments.Count)
+                                    {
+                                        int r = ReserveRegister();
+                                        reservedRegisters.Add(r);
+                                        callArguments += " r" + r;
+
+                                        Console.WriteLine($"move r{r} r0");
+                                    }
+                                }
+                            }
+
+                            Console.WriteLine($"{cn.Identifier} r0" + callArguments);
+
+                            foreach (var p in reservedRegisters)
+                            {
+                                FreeRegister(p);
+                            }
+                        }
+
                         break;
                     }
             }
@@ -275,9 +410,9 @@ namespace Stationeers.Compiler
 
         private String GenerateLabel(String prefix)
         {
-            labelCounter.TryGetValue(prefix, out int counter);
+            _labelCounter.TryGetValue(prefix, out int counter);
             ++counter;
-            labelCounter[prefix] = counter;
+            _labelCounter[prefix] = counter;
 
             return $"{prefix}{counter:000}";
         }
@@ -286,10 +421,10 @@ namespace Stationeers.Compiler
         {
             for (int i = MAX_REGISTER; i >= MIN_REGISTER; --i)
             {
-                if (registers[i]) continue;
-                registers[i] = true;
+                if (_registers[i]) continue;
+                _registers[i] = true;
 
-                variables[variable] = i;
+                _variables[variable] = i;
                 return i;
             }
 
@@ -298,7 +433,7 @@ namespace Stationeers.Compiler
 
         private int GetVariable(string variable)
         {
-            if (variables.TryGetValue(variable, out int i))
+            if (_variables.TryGetValue(variable, out int i))
             {
                 return i;
             }
@@ -308,15 +443,15 @@ namespace Stationeers.Compiler
 
         private bool HasVariable(string variable)
         {
-            return variables.ContainsKey(variable);
+            return _variables.ContainsKey(variable);
         }
 
         private int ReserveRegister()
         {
             for (int i = MIN_REGISTER; i < MAX_REGISTER; ++i)
             {
-                if (registers[i]) continue;
-                registers[i] = true;
+                if (_registers[i]) continue;
+                _registers[i] = true;
                 return i;
             }
 
@@ -325,9 +460,9 @@ namespace Stationeers.Compiler
 
         private void FreeRegister(int r)
         {
-            if (registers[r])
+            if (_registers[r])
             {
-                registers[r] = false;
+                _registers[r] = false;
             }
             else
             {

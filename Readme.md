@@ -1,4 +1,4 @@
-# High level programming language for Stationeer
+# High level programming language for Stationeers
 
 _Currently in an early stage, with limited functionality and untested features._\
 _This project is primarily an experimental work for my own learning._
@@ -108,7 +108,7 @@ while_end001:
 - Unoptimized MIPS output
 - Limited instruction set (no math and logic functions, sin, abs, not, ...)
 - Cannot access device slots, stack and reagent mix values
-- Limited variable number (15)
+- Limited variable number (10 or less)
 - You cannot access internal stack.
 - Currently, error messages are not user-friendly or missing.
 - Cannot define subroutines or functions.
