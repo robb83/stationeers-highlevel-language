@@ -28,6 +28,10 @@
         Symbol_Asterik,
         Symbol_Slash,
         Symbol_LeftBracket,
-        Symbol_RightBracket
+        Symbol_RightBracket,
+        Symbol_And,
+        Symbol_Pipe,
+        Symbol_Tilde,
+        Symbol_Hat
     }
 }

@@ -43,6 +43,15 @@ while ( condition )
 }
 ```
 
+Loop
+```csharp
+loop
+{
+    break;
+    continue;
+}
+```
+
 Device configuration for easier communication with external devices.
 
 ```csharp
@@ -61,6 +70,13 @@ device3.On = device2.Temperature < 410;
 ```
 Supported operation: + - * /
 Supported conditions: < <= > >= == !=
+Supported built-in methods: sleep(r|num), yield()
+Supported built-in functions: 
+abs(r|num), acos(r|num), asin(r|num), atan(r|num), atan2(r|num), ceil(r|num), cos(r|num), exp(r|num), floor(r|num), log(r|num), rand(r|num), round(r|num), sin(r|num), sqrt(r|num), tan(r|num), trunc(r|num), mod(r|num)
+
+max(r|num, r|num), min(r|num, r|num), xor(r|num, r|num), nor(r|num, r|num), not(r|num, r|num), and(r|num, r|num), or(r|num, r|num)
+
+select(r|num, r|num, r|num)
 ```
 
 ## Example:
@@ -86,14 +102,10 @@ while (1)
 
 ```mips
 while_start001:
-move r0 1
-blt r0 1 while_end001
 lbn r0 -1252983604 1658757745 Temperature Minimum
 s d0 Setting r0
 lbn r0 -1252983604 1658757745 Temperature Minimum
-move r1 r0
-move r0 410
-slt r0 r1 r0
+slt r0 r0 410
 sb -321403609 On r0
 j while_start001
 while_end001:

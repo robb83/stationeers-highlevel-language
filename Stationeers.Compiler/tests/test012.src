@@ -1,0 +1,19 @@
+var switch = Device(StructureLogicSwitch, d0);
+var growLight = Device(StructureBattery, d1);
+var light = 1;
+
+loop
+{
+	var timer = 600;
+	while (switch.Setting)
+	{
+		timer = timer - 0.5;
+
+		if (timer <= 0)
+		{
+			growLight.On = light;
+			light = xor(light, 1);
+			break;
+		}
+	}
+}

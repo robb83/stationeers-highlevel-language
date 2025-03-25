@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO.Hashing;
+using System.Reflection.Emit;
 using System.Text;
 using Stationeers.Compiler.AST;
 
@@ -8,7 +10,7 @@ namespace Stationeers.Compiler
 {
     public class OutputGenerator
     {
-        const int MIN_REGISTER = 1;
+        const int MIN_REGISTER = 0;
         const int MAX_REGISTER = 15;
         const int STACK_SIZE = 512;
 
@@ -31,10 +33,12 @@ namespace Stationeers.Compiler
 
         public void Print()
         {
-            GenerateMipsCode(_programNode);
+            int r = ReserveRegister();
+            GenerateMipsCode(_programNode, r);
+            FreeRegister(r);
         }
 
-        private void GenerateMipsCode(Node node)
+        private void GenerateMipsCode(Node node, int r)
         {
             switch (node)
             {
@@ -43,7 +47,7 @@ namespace Stationeers.Compiler
                     {
                         foreach (var s in program.Statements)
                         {
-                            GenerateMipsCode(s);
+                            GenerateMipsCode(s, r);
                         }
                     }
                     break;
@@ -52,7 +56,7 @@ namespace Stationeers.Compiler
                     {
                         foreach (var s in block.Statements)
                         {
-                            GenerateMipsCode(s);
+                            GenerateMipsCode(s, r);
                         }
                     }
                     break;
@@ -60,45 +64,85 @@ namespace Stationeers.Compiler
                     {
                         if (csn.Alternate != null)
                         {
-                            var label1 = GenerateLabel("if_else");
-                            var label2 = GenerateLabel("if_end");
+                            IsConstantExpressionAndTrue(csn.Condition, out bool constant, out bool isTrue);
 
-                            GenerateMipsCode(csn.Condition);
-                            Console.WriteLine("blt r0 1 " + label1);
-                            GenerateMipsCode(csn.Statement);
-                            Console.WriteLine("j " + label2);
-                            Console.WriteLine(label1 + ":");
-                            GenerateMipsCode(csn.Alternate);
-                            Console.WriteLine(label2 + ":");
+                            if (!constant)
+                            {
+                                var label1 = GenerateLabel("if_else");
+                                var label2 = GenerateLabel("if_end");
+
+                                GenerateOpositeJump(csn.Condition, r, label1);
+                                GenerateMipsCode(csn.Statement, r);
+                                Console.WriteLine("j " + label2);
+                                Console.WriteLine(label1 + ":");
+                                GenerateMipsCode(csn.Alternate, r);
+                                Console.WriteLine(label2 + ":");
+                            } 
+                            else if (isTrue)
+                            {
+                                GenerateMipsCode(csn.Statement, r);
+                            }
+                            else
+                            {
+                                GenerateMipsCode(csn.Alternate, r);
+                            }
                         }
                         else
                         {
-                            var label = GenerateLabel("if");
-                            GenerateMipsCode(csn.Condition);
-                            Console.WriteLine("blt r0 1 " + label);
-                            GenerateMipsCode(csn.Statement);
-                            Console.WriteLine(label + ":");
+                            IsConstantExpressionAndTrue(csn.Condition, out bool constant, out bool isTrue);
+
+                            if (!constant)
+                            {
+                                var label = GenerateLabel("if");
+                                GenerateOpositeJump(csn.Condition, r, label);
+                                GenerateMipsCode(csn.Statement, r);
+                                Console.WriteLine(label + ":");
+                            } 
+                            else if (isTrue)
+                            {
+                                GenerateMipsCode(csn.Statement, r);
+                            }
                         }
 
                         break;
                     }
                 case ConditionalLoopNode cln:
                     {
-                        var label1 = GenerateLabel("while_start");
-                        var label2 = GenerateLabel("while_end");
+                        IsConstantExpressionAndTrue(cln.Condition, out bool constant, out bool isTrue);
 
-                        _continuePoints.Push(label1);
-                        _breakPoints.Push(label2);
+                        if (!constant)
+                        {
+                            var label1 = GenerateLabel("while_start");
+                            var label2 = GenerateLabel("while_end");
 
-                        Console.WriteLine(label1 + ":");
-                        GenerateMipsCode(cln.Condition);
-                        Console.WriteLine("blt r0 1 " + label2);
-                        GenerateMipsCode(cln.Statement);
-                        Console.WriteLine("j " + label1);
-                        Console.WriteLine(label2 + ":");
+                            _continuePoints.Push(label1);
+                            _breakPoints.Push(label2);
 
-                        _continuePoints.Pop();
-                        _breakPoints.Pop();
+                            Console.WriteLine(label1 + ":");
+                            GenerateOpositeJump(cln.Condition, r, label2);
+                            GenerateMipsCode(cln.Statement, r);
+                            Console.WriteLine("j " + label1);
+                            Console.WriteLine(label2 + ":");
+
+                            _continuePoints.Pop();
+                            _breakPoints.Pop();
+                        }
+                        else if (isTrue)
+                        {
+                            var label1 = GenerateLabel("while_start");
+                            var label2 = GenerateLabel("while_end");
+
+                            _continuePoints.Push(label1);
+                            _breakPoints.Push(label2);
+
+                            Console.WriteLine(label1 + ":");
+                            GenerateMipsCode(cln.Statement, r);
+                            Console.WriteLine("j " + label1);
+                            Console.WriteLine(label2 + ":");
+
+                            _continuePoints.Pop();
+                            _breakPoints.Pop();
+                        }
 
                         break;
                     }
@@ -111,7 +155,7 @@ namespace Stationeers.Compiler
                         _breakPoints.Push(label2);
 
                         Console.WriteLine(label1 + ":");
-                        GenerateMipsCode(ln.Statement);
+                        GenerateMipsCode(ln.Statement, r);
                         Console.WriteLine("j " + label1);
                         Console.WriteLine(label2 + ":");
 
@@ -134,66 +178,81 @@ namespace Stationeers.Compiler
                     }
                 case BinaryOpNode bop:
                     {
-                        int r = ReserveRegister();
+                        int rt = r;
 
-                        GenerateMipsCode(bop.Left);
-                        Console.WriteLine($"move r{r} r0");
-                        GenerateMipsCode(bop.Right);
+                        if (GetNumericValueOrRegister(bop.Left, rt, out string a1))
+                        {
+                            rt = ReserveRegister();
+                        }
+
+                        if (GetNumericValueOrRegister(bop.Right, rt, out string a2))
+                        {
+                            FreeRegister(rt);
+                        }
 
                         switch (bop.Operator)
                         {
                             case OperatorType.OpMul:
-                                Console.WriteLine($"mul r0 r{r} r0");
+                                Console.WriteLine($"mul r{r} {a1} {a2}");
                                 break;
                             case OperatorType.OpDiv:
-                                Console.WriteLine($"div r0 r{r} r0");
+                                Console.WriteLine($"div r{r} {a1} {a2}");
                                 break;
                             case OperatorType.OpAdd:
-                                Console.WriteLine($"add r0 r{r} r0");
+                                Console.WriteLine($"add r{r} {a1} {a2}");
                                 break;
                             case OperatorType.OpSub:
-                                Console.WriteLine($"sub r0 r{r} r0");
+                                Console.WriteLine($"sub r{r} {a1} {a2}");
                                 break;
                             default:
                                 throw new Exception($"Not supported Operator: {bop.Operator}.");
                         }
+
                         break;
                     }
                 case ComparisonNode cop:
                     {
-                        int r = ReserveRegister();
+                        int rt = r;
 
-                        GenerateMipsCode(cop.Left);
-                        Console.WriteLine($"move r{r} r0");
-                        GenerateMipsCode(cop.Right);
+                        if (GetNumericValueOrRegister(cop.Left, rt, out string a1))
+                        {
+                            rt = ReserveRegister();
+                        }
+
+                        if (GetNumericValueOrRegister(cop.Right, rt, out string a2))
+                        {
+                            FreeRegister(rt);
+                        }
+
                         switch (cop.Operator)
                         {
                             case ComparsionOperatorType.OpEqual:
-                                Console.WriteLine($"seq r0 r{r} r0");
+                                Console.WriteLine($"seq r{r} {a1} {a2}");
                                 break;
                             case ComparsionOperatorType.OpNotEqual:
-                                Console.WriteLine($"sne r0 r{r} r0");
+                                Console.WriteLine($"sne r{r} {a1} {a2}");
                                 break;
                             case ComparsionOperatorType.OpLess:
-                                Console.WriteLine($"slt r0 r{r} r0");
+                                Console.WriteLine($"slt r{r} {a1} {a2}");
                                 break;
                             case ComparsionOperatorType.OpLessOrEqual:
-                                Console.WriteLine($"sle r0 r{r} r0");
+                                Console.WriteLine($"sle r{r} {a1} {a2}");
                                 break;
                             case ComparsionOperatorType.OpGreater:
-                                Console.WriteLine($"sgt r0 r{r} r0");
+                                Console.WriteLine($"sgt r{r} {a1} {a2}");
                                 break;
                             case ComparsionOperatorType.OpGreaterOrEqual:
-                                Console.WriteLine($"sge r0 r{r} r0");
+                                Console.WriteLine($"sge r{r} {a1} {a2}");
                                 break;
                             default:
                                 throw new Exception($"Not supported comparsion operator: {cop.Operator}.");
                         }
+
                         break;
                     }
                 case NumericNode nn:
                     {
-                        Console.WriteLine($"move r0 {nn.Value}");
+                        Console.WriteLine($"move r{r} {nn.Value}");
                         break;
                     }
                 case IdentifierNode idn:
@@ -215,8 +274,8 @@ namespace Stationeers.Compiler
                                 }
                                 else if (idn.Index is IdentifierNode iidn)
                                 {
-                                    var r = GetVariable(iidn.Identifier);
-                                    indexValue = "r" + r;
+                                    var ri = GetVariable(iidn.Identifier);
+                                    indexValue = "r" + ri;
                                 }
                                 else
                                 {
@@ -225,15 +284,15 @@ namespace Stationeers.Compiler
 
                                 if (dcn.Port != null)
                                 {
-                                    Console.WriteLine($"ls r0 {dcn.Port} {indexValue} {idn.Property}");
+                                    Console.WriteLine($"ls r{r} {dcn.Port} {indexValue} {idn.Property}");
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"lbns r0 {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {indexValue} {idn.Property} {dcn.BatchMode}");
+                                    Console.WriteLine($"lbns r{r} {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {indexValue} {idn.Property} {dcn.BatchMode}");
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"lbs r0 {GenerateHashValue(dcn.Type)} {indexValue} {idn.Property} {dcn.BatchMode}");
+                                    Console.WriteLine($"lbs r{r} {GenerateHashValue(dcn.Type)} {indexValue} {idn.Property} {dcn.BatchMode}");
                                 }
                                 else
                                 {
@@ -244,15 +303,15 @@ namespace Stationeers.Compiler
                             {
                                 if (dcn.Port != null)
                                 {
-                                    Console.WriteLine($"l r0 {dcn.Port} {idn.Property}");
+                                    Console.WriteLine($"l r{r} {dcn.Port} {idn.Property}");
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"lbn r0 {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {idn.Property} {dcn.BatchMode}");
+                                    Console.WriteLine($"lbn r{r} {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {idn.Property} {dcn.BatchMode}");
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"lb r0 {GenerateHashValue(dcn.Type)} {idn.Property} {dcn.BatchMode}");
+                                    Console.WriteLine($"lb r{r} {GenerateHashValue(dcn.Type)} {idn.Property} {dcn.BatchMode}");
                                 }
                                 else
                                 {
@@ -262,8 +321,8 @@ namespace Stationeers.Compiler
                         }
                         else
                         {
-                            var r = GetVariable(idn.Identifier);
-                            Console.WriteLine($"move r0 r{r}");
+                            var rv = GetVariable(idn.Identifier);
+                            Console.WriteLine($"move r{r} r{rv}");
                         }
 
                         break;
@@ -281,10 +340,10 @@ namespace Stationeers.Compiler
                         }
                         else
                         {
-                            GenerateMipsCode(vdn.Expression);
-                            var r = RegisterVariable(vdn.Identifier);
-                            Console.WriteLine($"move r{r} r0");
+                            int rv = RegisterVariable(vdn.Identifier);
+                            GenerateMipsCode(vdn.Expression, rv);
                         }
+
                         break;
                     }
                 case AssigmentNode an:
@@ -298,7 +357,7 @@ namespace Stationeers.Compiler
                                 throw new Exception("Missing logicType or slotLogicType.");
                             }
 
-                            GenerateMipsCode(an.Expression);
+                            GetNumericValueOrRegister(an.Expression, r, out string a1);
 
                             if (identifier.Index != null)
                             {
@@ -310,8 +369,8 @@ namespace Stationeers.Compiler
                                 }
                                 else if (identifier.Index is IdentifierNode iidn)
                                 {
-                                    var r = GetVariable(iidn.Identifier);
-                                    indexValue = "r" + r;
+                                    var ri = GetVariable(iidn.Identifier);
+                                    indexValue = "r" + ri;
                                 }
                                 else
                                 {
@@ -320,7 +379,7 @@ namespace Stationeers.Compiler
 
                                 if (dcn.Port != null)
                                 {
-                                    Console.WriteLine($"ss {dcn.Port} {indexValue} {identifier.Property} r0");
+                                    Console.WriteLine($"ss {dcn.Port} {indexValue} {identifier.Property} {a1}");
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
@@ -329,7 +388,7 @@ namespace Stationeers.Compiler
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sbs {GenerateHashValue(dcn.Type)} {indexValue} {identifier.Property} r0");
+                                    Console.WriteLine($"sbs {GenerateHashValue(dcn.Type)} {indexValue} {identifier.Property} {a1}");
                                 }
                                 else
                                 {
@@ -340,15 +399,15 @@ namespace Stationeers.Compiler
                             {
                                 if (dcn.Port != null)
                                 {
-                                    Console.WriteLine($"s {dcn.Port} {identifier.Property} r0");
+                                    Console.WriteLine($"s {dcn.Port} {identifier.Property} {a1}");
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sbn {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {identifier.Property} r0");
+                                    Console.WriteLine($"sbn {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {identifier.Property} {a1}");
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sb {GenerateHashValue(dcn.Type)} {identifier.Property} r0");
+                                    Console.WriteLine($"sb {GenerateHashValue(dcn.Type)} {identifier.Property} {a1}");
                                 }
                                 else
                                 {
@@ -358,9 +417,11 @@ namespace Stationeers.Compiler
                         }
                         else
                         {
-                            GenerateMipsCode(an.Expression);
-                            var r = GetVariable(identifier.Identifier);
-                            Console.WriteLine($"move r{r} r0");
+                            var rv = GetVariable(identifier.Identifier);
+                            if (!GetNumericValueOrRegister(an.Expression, rv, out string a1))
+                            {
+                                Console.WriteLine($"move r{rv} {a1}");
+                            }
                         }
                         break;
                     }
@@ -373,8 +434,8 @@ namespace Stationeers.Compiler
                                 throw new Exception("");
                             }
 
-                            GenerateMipsCode(cn.Arguments[0]);
-                            Console.WriteLine($"sleep r0");
+                            GetNumericValueOrRegister(cn.Arguments[0], r, out string a1);
+                            Console.WriteLine($"sleep {a1}");
                         }
                         else if (String.Compare(Keywords.YIELD, cn.Identifier, StringComparison.Ordinal) == 0)
                         {
@@ -392,23 +453,19 @@ namespace Stationeers.Compiler
 
                             if (cn.Arguments != null && cn.Arguments.Count > 0)
                             {
-                                callArguments += " r0";
                                 for (int a = 0; a < cn.Arguments.Count; ++a)
                                 {
-                                    GenerateMipsCode(cn.Arguments[a]);
-
-                                    if (a + 1 < cn.Arguments.Count)
+                                    int ra = ReserveRegister();
+                                    if (GetNumericValueOrRegister(cn.Arguments[a], ra, out string a1))
                                     {
-                                        int r = ReserveRegister();
-                                        reservedRegisters.Add(r);
-                                        callArguments += " r" + r;
-
-                                        Console.WriteLine($"move r{r} r0");
+                                        reservedRegisters.Add(ra);
                                     }
+
+                                    callArguments += " " + a1;
                                 }
                             }
 
-                            Console.WriteLine($"{cn.Identifier} r0" + callArguments);
+                            Console.WriteLine($"{cn.Identifier} r{r}" + callArguments);
 
                             foreach (var p in reservedRegisters)
                             {
@@ -418,7 +475,95 @@ namespace Stationeers.Compiler
 
                         break;
                     }
+                default:
+                    throw new Exception($"Not supported Node: {node?.GetType()?.Name}");
             }
+        }
+
+        private void IsConstantExpressionAndTrue(Node n, out bool constant, out bool isTrue)
+        {
+            if (n is NumericNode nn)
+            {
+                constant = true;
+                isTrue = IsTrue(nn.Value);
+                return;
+            }
+
+            constant = false;
+            isTrue = false;
+        }
+
+        private bool IsTrue(String numericValue)
+        {
+            return Double.Parse(numericValue, CultureInfo.InvariantCulture) >= 1.0;
+        }
+
+        private void GenerateOpositeJump(Node n, int r, String label)
+        {
+            if (n is ComparisonNode cn)
+            {
+                int rt = r;
+
+                if (GetNumericValueOrRegister(cn.Left, rt, out string a1))
+                {
+                    rt = ReserveRegister();
+                }
+
+                if (GetNumericValueOrRegister(cn.Right, rt, out string a2))
+                {
+                    FreeRegister(rt);
+                }
+
+                switch (cn.Operator)
+                {
+                    case ComparsionOperatorType.OpEqual:
+                        Console.WriteLine($"bne r{r} {a1} {a2} {label}");
+                        break;
+                    case ComparsionOperatorType.OpNotEqual:
+                        Console.WriteLine($"beq r{r} {a1} {a2} {label}");
+                        break;
+                    case ComparsionOperatorType.OpLess:
+                        Console.WriteLine($"bge r{r} {a1} {a2} {label}");
+                        break;
+                    case ComparsionOperatorType.OpLessOrEqual:
+                        Console.WriteLine($"bgt r{r} {a1} {a2} {label}");
+                        break;
+                    case ComparsionOperatorType.OpGreater:
+                        Console.WriteLine($"ble r{r} {a1} {a2} {label}");
+                        break;
+                    case ComparsionOperatorType.OpGreaterOrEqual:
+                        Console.WriteLine($"blt r{r} {a1} {a2} {label}");
+                        break;
+                    default:
+                        throw new Exception($"Not supported comparsion operator: {cn.Operator}.");
+                }
+            }
+            else
+            {
+                GetNumericValueOrRegister(n, r, out string a1);
+                Console.WriteLine($"blt {a1} 1 {label}");
+            }
+        }
+
+        private bool GetNumericValueOrRegister(Node n, int r, out String result)
+        {
+            // constant expression
+            if (n is NumericNode nn)
+            {
+                result = nn.Value;
+                return false; 
+            } 
+            // access directly to variable
+            else if (n is IdentifierNode idn && !_devices.TryGetValue(idn.Identifier, out DeviceConfigNode dcn))
+            {
+                int rv = GetVariable(idn.Identifier);
+                result = "r" + rv;
+                return false;
+            }
+
+            GenerateMipsCode(n, r);
+            result = "r" + r;
+            return true;
         }
 
         private Int32 GenerateHashValue(string value)

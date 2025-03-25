@@ -23,6 +23,8 @@ namespace Stationeers.Compiler
             ReservedKeywords.Add(Keywords.CONTINUE, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.DEVICE, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.LOOP, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.DEF, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.FN, TokenType.Keyword);
 
             ReservedKeywords.Add("nan", TokenType.Keyword);
             ReservedKeywords.Add("pinf", TokenType.Keyword);
@@ -51,6 +53,7 @@ namespace Stationeers.Compiler
             ReservedKeywords.Add(Keywords.SQRT, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.TAN, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.TRUNC, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.SELECT, TokenType.Keyword);
 
             ReservedKeywords.Add("sla", TokenType.Keyword);
             ReservedKeywords.Add("sll", TokenType.Keyword);
@@ -59,7 +62,6 @@ namespace Stationeers.Compiler
 
             ReservedKeywords.Add(Keywords.SLEEP, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.YIELD, TokenType.Keyword);
-            ReservedKeywords.Add("select", TokenType.Keyword);
             ReservedKeywords.Add("hcf", TokenType.Keyword);
 
             ReservedKeywords.Add(Keywords.AND, TokenType.Keyword);
@@ -162,6 +164,18 @@ namespace Stationeers.Compiler
                         {
                             tokens.Add(new Token(TokenType.Symbol_LessThen, ">"));
                         }
+                        break;
+                    case '&':
+                        tokens.Add(new Token(TokenType.Symbol_And, "&"));
+                        break;
+                    case '|':
+                        tokens.Add(new Token(TokenType.Symbol_Pipe, "|"));
+                        break;
+                    case '~':
+                        tokens.Add(new Token(TokenType.Symbol_Tilde, "~"));
+                        break;
+                    case '^':
+                        tokens.Add(new Token(TokenType.Symbol_Hat, "^"));
                         break;
                     case '+':
                         tokens.Add(new Token(TokenType.Symbol_Plus, "+"));

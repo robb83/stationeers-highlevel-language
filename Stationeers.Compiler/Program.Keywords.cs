@@ -14,6 +14,8 @@ namespace Stationeers.Compiler
         public const String RETURN = "return";
         public const String DEVICE = "Device";
         public const String LOOP = "loop";
+        public const String DEF = "def";
+        public const String FN = "fn";
 
         public const String YIELD = "yield";
         public const String RAND = "rand";
@@ -34,6 +36,7 @@ namespace Stationeers.Compiler
         public const String TAN = "tan";
         public const String TRUNC = "trunc";
         public const String SLEEP = "sleep";
+        public const String SELECT = "select";
 
         public const String MAX = "max";
         public const String MIN = "min";

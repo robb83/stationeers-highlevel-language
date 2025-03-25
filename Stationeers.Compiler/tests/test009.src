@@ -1,0 +1,34 @@
+var a = 0;
+var b = a + 1;
+
+#if (b > 0)
+#{
+#	sleep(a);
+#}
+
+#if (b > 0)
+#{
+#	sleep(a);
+#} 
+#else 
+#{
+#	yield();
+#}
+
+if (b > 0)
+{
+	sleep(a);
+} 
+else if ( b == 0)
+{
+	sleep(12);
+}
+else 
+{
+	yield();
+}
+
+#while (b > 0)
+#{
+#	sleep(a);
+#}

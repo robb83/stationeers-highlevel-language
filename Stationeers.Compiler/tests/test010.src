@@ -1,0 +1,22 @@
+var switch = Device(StructureLogicSwitch, d0);
+var battery = Device(StructureBattery, d1);
+var generator = Device(StructureSolidFuelGenerator, d2);
+
+loop
+{
+	if (switch.Setting > 0)
+	{
+		if (generator.On)
+		{
+			generator.On = battery.Ratio < 0.9;
+		}
+		else 
+		{
+			generator.On = battery.Ratio < 0.5;
+		}
+	} 
+	else 
+	{
+		generator.On = 0;
+	}
+}

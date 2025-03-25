@@ -45,7 +45,7 @@ namespace Stationeers.Compiler
             {
                 Keywords.RAND,
                 Keywords.ABS,
-                Keywords.COS,
+                Keywords.ACOS,
                 Keywords.ASIN,
                 Keywords.ATAN,
                 Keywords.ATAN2,
@@ -66,7 +66,8 @@ namespace Stationeers.Compiler
                 Keywords.NOR,
                 Keywords.NOT,
                 Keywords.AND,
-                Keywords.OR
+                Keywords.OR,
+                Keywords.SELECT
             };
         }
 
@@ -210,7 +211,7 @@ namespace Stationeers.Compiler
                 return new DeviceConfigNode(type.Value, null, null, arguments[1].Value);
             }
 
-            throw new Exception("");
+            throw new Exception("Invalid Device Configuration.");
         }
 
         private bool IsBatchMode(String value)
