@@ -134,6 +134,16 @@ namespace Stationeers.Compiler.AST
                 Print(con.Right, level);
                 Write(")");
             }
+            else if (n is LogicalNode logn)
+            {
+                Write("(");
+                Print(logn.Left, level);
+                Write(" ");
+                Write(Convert(logn.Operator));
+                Write(" ");
+                Print(logn.Right, level);
+                Write(")");
+            }
             else if (n is UnaryOpNode uon)
             {
                 Write(Convert(uon.Operator));
@@ -225,6 +235,19 @@ namespace Stationeers.Compiler.AST
         {
             _buffer.Append(new string(' ', level * 2));
             _buffer.AppendLine(message);
+        }
+
+        private String Convert(LogicalOperatorType t)
+        {
+            switch (t)
+            {
+                case LogicalOperatorType.OpAnd:
+                    return "&&";
+                case LogicalOperatorType.OpOr:
+                    return "||";
+                default:
+                    throw new Exception($"Not supported operator ({t}).");
+            }
         }
 
         private String Convert(ComparsionOperatorType t)

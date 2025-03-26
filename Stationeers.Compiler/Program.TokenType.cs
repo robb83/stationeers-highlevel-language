@@ -32,6 +32,8 @@
         Symbol_And,
         Symbol_Pipe,
         Symbol_Tilde,
-        Symbol_Hat
+        Symbol_Hat,
+        Symbol_LogicalOr,
+        Symbol_LogicalAnd,
     }
 }

@@ -7,6 +7,12 @@ namespace Stationeers.Compiler.AST
     {
     }
 
+    public enum LogicalOperatorType
+    {
+        OpAnd,
+        OpOr
+    }
+
     public enum ComparsionOperatorType
     {
         OpEqual,
@@ -221,6 +227,19 @@ namespace Stationeers.Compiler.AST
         public ComparsionOperatorType Operator;
 
         public ComparisonNode(Node left, ComparsionOperatorType op, Node right)
+        {
+            Left = left;
+            Operator = op;
+            Right = right;
+        }
+    }
+
+    public class LogicalNode : Node
+    {
+        public Node Left, Right;
+        public LogicalOperatorType Operator;
+
+        public LogicalNode(Node left, LogicalOperatorType op, Node right)
         {
             Left = left;
             Operator = op;

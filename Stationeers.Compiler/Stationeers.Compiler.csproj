@@ -74,6 +74,9 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="tests\test014.src">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="tests\test013.src">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -166,10 +166,26 @@ namespace Stationeers.Compiler
                         }
                         break;
                     case '&':
-                        tokens.Add(new Token(TokenType.Symbol_And, "&"));
+                        if (_position + 1 < _code.Length && _code[_position + 1] == '&')
+                        {
+                            _position++;
+                            tokens.Add(new Token(TokenType.Symbol_LogicalAnd, "&"));
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.Symbol_And, "&"));
+                        }
                         break;
                     case '|':
-                        tokens.Add(new Token(TokenType.Symbol_Pipe, "|"));
+                        if (_position + 1 < _code.Length && _code[_position + 1] == '|')
+                        {
+                            _position++;
+                            tokens.Add(new Token(TokenType.Symbol_LogicalOr, "|"));
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.Symbol_Pipe, "|"));
+                        }
                         break;
                     case '~':
                         tokens.Add(new Token(TokenType.Symbol_Tilde, "~"));

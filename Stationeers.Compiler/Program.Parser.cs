@@ -12,6 +12,7 @@ namespace Stationeers.Compiler
         private List<TokenType> _comparsionOperators;
         private List<TokenType> _termOperators;
         private List<TokenType> _factorOperators;
+        private List<TokenType> _logicOperators;
         private List<String> _builtInFunctions;
 
         public Parser(List<Token> tokens)
@@ -39,6 +40,12 @@ namespace Stationeers.Compiler
             {
                 TokenType.Symbol_Asterik,
                 TokenType.Symbol_Slash
+            };
+
+            _logicOperators = new List<TokenType>
+            {
+                TokenType.Symbol_LogicalAnd,
+                TokenType.Symbol_LogicalOr
             };
 
             _builtInFunctions = new List<string>
@@ -395,7 +402,20 @@ namespace Stationeers.Compiler
 
         private Node ParseExpression()
         {
-            return ParseComparsion();
+            return ParseLogical();
+        }
+
+        private Node ParseLogical()
+        {
+            var node = ParseComparsion();
+
+            while (_position < _tokens.Count && _logicOperators.Contains(_tokens[_position].Type))
+            {
+                var op = ConvertToLogical(_tokens[_position++].Type);
+                node = new LogicalNode(node, op, ParseComparsion());
+            }
+
+            return node;
         }
 
         private Node ParseComparsion()
@@ -611,6 +631,19 @@ namespace Stationeers.Compiler
             return _position < _tokens.Count && _tokens[_position].Type == type && keywords.Contains(_tokens[_position].Value);
         }
 
+        private LogicalOperatorType ConvertToLogical(TokenType tt)
+        {
+            switch (tt)
+            {
+                case TokenType.Symbol_LogicalAnd:
+                    return LogicalOperatorType.OpAnd;
+                case TokenType.Symbol_LogicalOr:
+                    return LogicalOperatorType.OpOr;
+                default:
+                    throw new Exception($"Not supported logical operation type: {tt}.");
+            }
+        }
+
         private ComparsionOperatorType ConvertToComparsion(TokenType tt)
         {
             switch (tt)
@@ -628,7 +661,7 @@ namespace Stationeers.Compiler
                 case TokenType.Symbol_GreaterThenOrEqual:
                     return ComparsionOperatorType.OpGreaterOrEqual;
                 default:
-                    throw new Exception("Not supported comparsion operation type: {tt}.");
+                    throw new Exception($"Not supported comparsion operation type: {tt}.");
             }
         }
 

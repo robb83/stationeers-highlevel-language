@@ -220,6 +220,19 @@ namespace Stationeers.Compiler.AST
 
                 return new ComparisonNode(left, con.Operator, right);
             }
+            else if (n is LogicalNode logn)
+            {
+                var left = Simplify(logn.Left);
+                var right = Simplify(logn.Right);
+                var op = logn.Operator;
+
+                if (left is NumericNode leftnn && right is NumericNode rightnn)
+                {
+                    return Eval(leftnn, rightnn, op);
+                }
+
+                return new LogicalNode(left, logn.Operator, right);
+            }
             else if (n is UnaryOpNode uon)
             {
                 var expr = Simplify(uon.Expression);
@@ -277,6 +290,25 @@ namespace Stationeers.Compiler.AST
             }
 
             return new IdentifierNode(idn.Identifier, index, idn.Property);
+        }
+
+        private NumericNode Eval(NumericNode left, NumericNode right, LogicalOperatorType lop)
+        {
+            bool result = false;
+
+            switch (lop)
+            {
+                case LogicalOperatorType.OpAnd:
+                    result = IsTrue(left) && IsTrue(right);
+                    break;
+                case LogicalOperatorType.OpOr:
+                    result = IsTrue(left) || IsTrue(right);
+                    break;
+                default:
+                    throw new Exception("Not supported operation.");
+            }
+
+            return new NumericNode(result ? "1" : "0");
         }
 
         private NumericNode Eval(Node left, Node right, OperatorType op)

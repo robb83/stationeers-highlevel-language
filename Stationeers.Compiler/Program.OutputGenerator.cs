@@ -187,7 +187,10 @@ namespace Stationeers.Compiler
 
                         if (GetNumericValueOrRegister(bop.Right, rt, out string a2))
                         {
-                            FreeRegister(rt);
+                            if (rt != r)
+                            {
+                                FreeRegister(rt);
+                            }
                         }
 
                         switch (bop.Operator)
@@ -221,7 +224,10 @@ namespace Stationeers.Compiler
 
                         if (GetNumericValueOrRegister(cop.Right, rt, out string a2))
                         {
-                            FreeRegister(rt);
+                            if (rt != r)
+                            {
+                                FreeRegister(rt);
+                            }
                         }
 
                         switch (cop.Operator)
@@ -246,6 +252,35 @@ namespace Stationeers.Compiler
                                 break;
                             default:
                                 throw new Exception($"Not supported comparsion operator: {cop.Operator}.");
+                        }
+
+                        break;
+                    }
+                case LogicalNode ln:
+                    {
+                        int ra = ReserveRegister();
+                        GetNumericValueOrRegister(ln.Left, ra, out string a1);
+
+                        int rb = ReserveRegister();
+                        GetNumericValueOrRegister(ln.Right, rb, out string a2);
+
+                        FreeRegister(ra);
+                        FreeRegister(rb);
+
+                        switch (ln.Operator)
+                        {
+                            case LogicalOperatorType.OpAnd:
+                                Console.WriteLine($"sge r{ra} {a1} 1");
+                                Console.WriteLine($"sge r{rb} {a2} 1");
+                                Console.WriteLine($"and r{r} r{ra} r{rb}");
+                                break;
+                            case LogicalOperatorType.OpOr:
+                                Console.WriteLine($"sge r{ra} {a1} 1");
+                                Console.WriteLine($"sge r{rb} {a2} 1");
+                                Console.WriteLine($"or r{r} r{ra} r{rb}");
+                                break;
+                            default:
+                                throw new Exception($"Not supported logical operator: {ln.Operator}.");
                         }
 
                         break;
@@ -511,7 +546,10 @@ namespace Stationeers.Compiler
 
                 if (GetNumericValueOrRegister(cn.Right, rt, out string a2))
                 {
-                    FreeRegister(rt);
+                    if (rt != r)
+                    {
+                        FreeRegister(rt);
+                    }
                 }
 
                 switch (cn.Operator)
@@ -536,6 +574,38 @@ namespace Stationeers.Compiler
                         break;
                     default:
                         throw new Exception($"Not supported comparsion operator: {cn.Operator}.");
+                }
+            }
+            else if (n is LogicalNode ln)
+            {
+                int rt = r;
+
+                if (GetNumericValueOrRegister(ln.Left, rt, out string a1))
+                {
+                    rt = ReserveRegister();
+                }
+
+                if (GetNumericValueOrRegister(ln.Right, rt, out string a2))
+                {
+                    if (rt != r)
+                    {
+                        FreeRegister(rt);
+                    }
+                }
+
+                switch (ln.Operator)
+                {
+                    case LogicalOperatorType.OpAnd:
+                        Console.WriteLine($"blt {a1} 1 {label}");
+                        Console.WriteLine($"blt {a2} 1 {label}");
+                        break;
+                    case LogicalOperatorType.OpOr:
+                        Console.WriteLine($"brge {a1} 1 3");
+                        Console.WriteLine($"brge {a2} 1 2");
+                        Console.WriteLine($"j {label}");
+                        break;
+                    default:
+                        throw new Exception($"Not supported logical operator: {ln.Operator}.");
                 }
             }
             else
