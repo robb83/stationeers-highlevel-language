@@ -8,15 +8,30 @@ namespace Stationeers.Compiler
     {
         static void Main(string[] args)
         {
-            var source = File.ReadAllText(@"tests\test000.src");
-            var lexer = new Lexer(source);
-            var tokens = lexer.Tokenize();
-            var parser = new Parser(tokens);
-            var program = parser.Parse();
-            var generator = new OutputGenerator(program);
-            generator.Print();
+            if (args == null || args.Length == 0)
+            {
+                PrintUsage();
+            }
+            else if (!File.Exists(args[0]))
+            {
+                Console.WriteLine("File not found: {0}.", args[0]);
+            }
+            else
+            {
+                var source = File.ReadAllText(args[0]);
+                var lexer = new Lexer(source);
+                var tokens = lexer.Tokenize();
+                var parser = new Parser(tokens);
+                var program = parser.Parse();
+                var generator = new OutputGenerator(program);
+                generator.Print();
+            }
+        }
 
-            Console.ReadKey();
+        private static void PrintUsage()
+        {
+            Console.WriteLine("Usage:");
+            Console.WriteLine("{0} filepath", System.AppDomain.CurrentDomain.FriendlyName);
         }
     }
 }

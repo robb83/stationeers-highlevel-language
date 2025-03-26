@@ -1,5 +1,3 @@
-# this is not a complete script, work in progress
-
 var vm = Device(StructureVendingMachine, d0);
 var stacker = Device(StructureStacker, d1);
 var sorter = Device(StructureSorter, d2);
@@ -19,33 +17,34 @@ loop
 	{
 		if (vm[slot].Occupied)
 		{
-			# count quantity
+			var count = 1;
 			var hash = vm[slot].OccupantHash;
 			var quantity = vm[slot].Quantity;
-			var count = 1;
 			var s = slot + 1;
-
 			while ( s < 102)
 			{
-				if (vm[s].Occupied)
+				if (vm[s].Occupied && vm[s].OccupantHash == hash)
 				{
-					if (vm[s].OccupantHash == hash)
-					{
-						count = count + 1;
-						quantity = quantity + vm[s].Quantity;
-					}
+					count = count + 1;
+					quantity = quantity + vm[s].Quantity;
 				}
 
 				s = s + 1;
 			}
 
 			# extract
-			# TODO: || quantity >= 50
-			while (count > 1)
+			while (count > 1 || quantity >= 50)
 			{
 				vm.RequestHash = hash;
 				yield();
-				# TODO: sorter check
+
+				# sorter
+				while (sorter[0].Occupied)
+				{
+					sorter.Output = sorter[0].Quantity >= 50;
+					yield();
+				}
+
 				count = count - 1;
 			}
 		}
@@ -53,8 +52,8 @@ loop
 		slot = slot + 1;
 	}
 
-	# TODO: || centrifuges.Reagents >= 180
-	if (centrifuges.Error > 0)
+	# open centrifuges if needed
+	if (centrifuges.Error > 0 || centrifuges.Reagents >= 180)
 	{
 		loop
 		{
@@ -69,11 +68,10 @@ loop
 	}
 	centrifuges.Open = 0;
 
+	# sorter
 	while (sorter[0].Occupied)
 	{
 		sorter.Output = sorter[0].Quantity >= 50;
 		yield();
 	}
 }
-
-#TODO: function, or, and operator in expression
