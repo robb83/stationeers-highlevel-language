@@ -16,10 +16,21 @@ namespace Stationeers.Compiler
         public const String LOOP = "loop";
         public const String DEF = "def";
         public const String FN = "fn";
+        public const String HASH = "HASH";
+
+        public const String PI = "pi";
+        public const String DEG2RAD = "deg2rad";
+        public const String RAD2DEG = "rad2deg";
+        public const String EPSILON = "epsilon";
+        public const String NAN = "nan";
+        public const String PINF = "pinf";
+        public const String NINF = "ninf";
 
         public const String YIELD = "yield";
-        public const String RAND = "rand";
+        public const String HCF = "hcf";
+        public const String SLEEP = "sleep";
 
+        public const String RAND = "rand";
         public const String ABS = "abs";
         public const String ACOS = "acos";
         public const String ASIN = "asin";
@@ -35,7 +46,6 @@ namespace Stationeers.Compiler
         public const String SQRT = "sqrt";
         public const String TAN = "tan";
         public const String TRUNC = "trunc";
-        public const String SLEEP = "sleep";
         public const String SELECT = "select";
 
         public const String MAX = "max";
@@ -46,5 +56,9 @@ namespace Stationeers.Compiler
         public const String NOT = "not";
         public const String AND = "and";
         public const String OR = "or";
+        public const String SLA = "sla";
+        public const String SLL = "sll";
+        public const String SRA = "sra";
+        public const String SRL = "srl";
     }
 }

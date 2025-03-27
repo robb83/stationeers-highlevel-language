@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Hashing;
+using System.Text;
 using Stationeers.Compiler.AST;
 
 namespace Stationeers.Compiler
@@ -74,7 +76,11 @@ namespace Stationeers.Compiler
                 Keywords.NOT,
                 Keywords.AND,
                 Keywords.OR,
-                Keywords.SELECT
+                Keywords.SELECT,
+                Keywords.SLA,
+                Keywords.SLL,
+                Keywords.SRA,
+                Keywords.SRL
             };
         }
 
@@ -126,6 +132,10 @@ namespace Stationeers.Compiler
                 return ParseFunctionCall(true);
             }
             else if (CheckCurrent(TokenType.Keyword, Keywords.SLEEP))
+            {
+                return ParseFunctionCall(true);
+            }
+            else if (CheckCurrent(TokenType.Keyword, Keywords.HCF))
             {
                 return ParseFunctionCall(true);
             }
@@ -433,7 +443,7 @@ namespace Stationeers.Compiler
 
         private Node ParseUnary()
         {
-            if (CheckCurrent(TokenType.Symbol_Not))
+            if (CheckCurrent(TokenType.Symbol_LogicalNot))
             {
                 Consume();
                 var op = UnaryOperationType.OpNot;
@@ -479,6 +489,18 @@ namespace Stationeers.Compiler
             if (CheckCurrent(TokenType.Number))
             {
                 return new NumericNode(_tokens[_position++].Value);
+            }
+
+            if (CheckCurrent(TokenType.Constant))
+            {
+                if (Utils.IsConstantExpression(_tokens[_position].Value))
+                {
+                    return new ConstantNode(_tokens[_position++].Value);
+                } 
+                else
+                {
+                    throw new Exception($"Not supported constant: {_tokens[_position].Value}.");
+                }
             }
 
             if (CheckCurrent(TokenType.Identifier))
@@ -536,6 +558,16 @@ namespace Stationeers.Compiler
                 return new IdentifierNode(identifier.Value, index, property?.Value);
             }
 
+            if (CheckCurrent(TokenType.Keyword, Keywords.HASH))
+            {
+                Consume();
+                ConsumeIf(TokenType.Symbol_LeftParentheses);
+                var token = ConsumeIf(TokenType.String);
+                ConsumeIf(TokenType.Symbol_RightParentheses);
+
+                return new HashNode(token.Value);
+            }
+
             if (CheckCurrent(TokenType.Keyword, Keywords.DEVICE))
             {
                 return ParseDeviceConfig();
@@ -549,15 +581,8 @@ namespace Stationeers.Compiler
             if (CheckCurrent(TokenType.Symbol_LeftParentheses))
             {
                 Consume();
-
                 Node expr = ParseExpression();
-
-                if (!CheckCurrent(TokenType.Symbol_RightParentheses))
-                {
-                    throw new Exception("Unexpected token.");
-                }
-
-                Consume();
+                ConsumeIf(TokenType.Symbol_RightParentheses);
                 return expr;
             }
 

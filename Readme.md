@@ -69,19 +69,24 @@ device3.On = device2.Temperature < 410;
 
 ```
 Supported operation: + - * /
-Supported conditions: < <= > >= == !=
+Supported compare: < <= > >= == !=
 Supported logic: && ||
-Supported built-in methods: sleep(r|num), yield()
+Supported built-in methods: sleep(r|num), yield(), hcf()
 Supported built-in functions: 
 abs(r|num), acos(r|num), asin(r|num), atan(r|num), atan2(r|num), ceil(r|num), cos(r|num), 
 exp(r|num), floor(r|num), log(r|num), rand(r|num), round(r|num), sin(r|num), sqrt(r|num), 
 tan(r|num), trunc(r|num), mod(r|num), max(r|num, r|num), min(r|num, r|num), xor(r|num, r|num), 
-nor(r|num, r|num), not(r|num, r|num), and(r|num, r|num), or(r|num, r|num), select(r|num, r|num, r|num)
+nor(r|num, r|num), not(r|num, r|num), and(r|num, r|num), or(r|num, r|num), 
+sla(r|num, r|num), sll(r|num, r|num), sra(r|num, r|num), srl(r|num, r|num), select(r|num, r|num, r|num)
 ```
 
 ## Example:
 
 <table>
+<tr>
+<td>Input</td>
+<td>Output</td>
+</tr>
 <tr>
 <td valign="top">
 

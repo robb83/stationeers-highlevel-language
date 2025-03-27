@@ -67,6 +67,7 @@
     <Compile Include="Program.Parser.cs" />
     <Compile Include="Program.AST.Printer.cs" />
     <Compile Include="Program.AST.Simplifier.cs" />
+    <Compile Include="Program.Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.Token.cs" />
     <Compile Include="Program.TokenType.cs" />
@@ -117,6 +118,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="tests\test001.src">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="tests\test015.src">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

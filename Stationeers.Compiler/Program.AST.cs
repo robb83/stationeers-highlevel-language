@@ -182,6 +182,26 @@ namespace Stationeers.Compiler.AST
         }
     }
 
+    public class ConstantNode : Node
+    {
+        public String Value;
+
+        public ConstantNode(string value)
+        {
+            Value = value;
+        }
+    }
+
+    public class HashNode : Node
+    {
+        public String Value;
+
+        public HashNode(string value)
+        {
+            Value = value;
+        }
+    }
+
     public class IdentifierNode : Node
     {
         public String Identifier;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO.Hashing;
 using System.Reflection.Emit;
+using System.Security.Policy;
 using System.Text;
 using Stationeers.Compiler.AST;
 
@@ -290,6 +291,16 @@ namespace Stationeers.Compiler
                         Console.WriteLine($"move r{r} {nn.Value}");
                         break;
                     }
+                case HashNode hashn:
+                    {
+                        Console.WriteLine($"move r{r} {Utils.HashAsInt32(hashn.Value)}");
+                        break;
+                    }
+                case ConstantNode constn:
+                    {
+                        Console.WriteLine($"move r{r} {constn.Value}");
+                        break;
+                    }
                 case IdentifierNode idn:
                     {
                         if (_devices.TryGetValue(idn.Identifier, out DeviceConfigNode dcn))
@@ -323,11 +334,11 @@ namespace Stationeers.Compiler
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"lbns r{r} {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {indexValue} {idn.Property} {dcn.BatchMode}");
+                                    Console.WriteLine($"lbns r{r} {Utils.HashAsInt32(dcn.Type)} {Utils.HashAsInt32(dcn.Name)} {indexValue} {idn.Property} {dcn.BatchMode}");
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"lbs r{r} {GenerateHashValue(dcn.Type)} {indexValue} {idn.Property} {dcn.BatchMode}");
+                                    Console.WriteLine($"lbs r{r} {Utils.HashAsInt32(dcn.Type)} {indexValue} {idn.Property} {dcn.BatchMode}");
                                 }
                                 else
                                 {
@@ -342,11 +353,11 @@ namespace Stationeers.Compiler
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"lbn r{r} {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {idn.Property} {dcn.BatchMode}");
+                                    Console.WriteLine($"lbn r{r} {Utils.HashAsInt32(dcn.Type)} {Utils.HashAsInt32(dcn.Name)} {idn.Property} {dcn.BatchMode}");
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"lb r{r} {GenerateHashValue(dcn.Type)} {idn.Property} {dcn.BatchMode}");
+                                    Console.WriteLine($"lb r{r} {Utils.HashAsInt32(dcn.Type)} {idn.Property} {dcn.BatchMode}");
                                 }
                                 else
                                 {
@@ -423,7 +434,7 @@ namespace Stationeers.Compiler
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sbs {GenerateHashValue(dcn.Type)} {indexValue} {identifier.Property} {a1}");
+                                    Console.WriteLine($"sbs {Utils.HashAsInt32(dcn.Type)} {indexValue} {identifier.Property} {a1}");
                                 }
                                 else
                                 {
@@ -438,11 +449,11 @@ namespace Stationeers.Compiler
                                 }
                                 else if (dcn.Name != null && dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sbn {GenerateHashValue(dcn.Type)} {GenerateHashValue(dcn.Name)} {identifier.Property} {a1}");
+                                    Console.WriteLine($"sbn {Utils.HashAsInt32(dcn.Type)} {Utils.HashAsInt32(dcn.Name)} {identifier.Property} {a1}");
                                 }
                                 else if (dcn.BatchMode != null)
                                 {
-                                    Console.WriteLine($"sb {GenerateHashValue(dcn.Type)} {identifier.Property} {a1}");
+                                    Console.WriteLine($"sb {Utils.HashAsInt32(dcn.Type)} {identifier.Property} {a1}");
                                 }
                                 else
                                 {
@@ -481,6 +492,15 @@ namespace Stationeers.Compiler
 
                             Console.WriteLine($"yield");
                         }
+                        else if (String.Compare(Keywords.HCF, cn.Identifier, StringComparison.Ordinal) == 0)
+                        {
+                            if (cn.Arguments != null && cn.Arguments.Count != 0)
+                            {
+                                throw new Exception("");
+                            }
+
+                            Console.WriteLine($"hcf");
+                        }
                         else
                         {
                             List<int> reservedRegisters = new List<int>();
@@ -517,20 +537,15 @@ namespace Stationeers.Compiler
 
         private void IsConstantExpressionAndTrue(Node n, out bool constant, out bool isTrue)
         {
-            if (n is NumericNode nn)
+            if (Utils.IsValueNode(n))
             {
                 constant = true;
-                isTrue = IsTrue(nn.Value);
+                isTrue = Utils.IsTrue(n);
                 return;
             }
 
             constant = false;
             isTrue = false;
-        }
-
-        private bool IsTrue(String numericValue)
-        {
-            return Double.Parse(numericValue, CultureInfo.InvariantCulture) >= 1.0;
         }
 
         private void GenerateOpositeJump(Node n, int r, String label)
@@ -622,7 +637,17 @@ namespace Stationeers.Compiler
             {
                 result = nn.Value;
                 return false; 
-            } 
+            }
+            else if (n is HashNode hashn)
+            {
+                result = Utils.HashAsInt32(hashn.Value).ToString();
+                return false;
+            }
+            else if (n is ConstantNode constn)
+            {
+                result = constn.Value;
+                return false;
+            }
             // access directly to variable
             else if (n is IdentifierNode idn && !_devices.TryGetValue(idn.Identifier, out DeviceConfigNode dcn))
             {
@@ -634,12 +659,6 @@ namespace Stationeers.Compiler
             GenerateMipsCode(n, r);
             result = "r" + r;
             return true;
-        }
-
-        private Int32 GenerateHashValue(string value)
-        {
-            var hash = BitConverter.ToInt32(Crc32.Hash(Encoding.ASCII.GetBytes(value)), 0);
-            return hash;
         }
 
         private String GenerateLabel(String prefix)

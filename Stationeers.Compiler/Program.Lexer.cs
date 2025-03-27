@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Stationeers.Compiler
 {
@@ -25,14 +26,15 @@ namespace Stationeers.Compiler
             ReservedKeywords.Add(Keywords.LOOP, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.DEF, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.FN, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.HASH, TokenType.Keyword);
 
-            ReservedKeywords.Add("nan", TokenType.Keyword);
-            ReservedKeywords.Add("pinf", TokenType.Keyword);
-            ReservedKeywords.Add("ninf", TokenType.Keyword);
-            ReservedKeywords.Add("pi", TokenType.Keyword);
-            ReservedKeywords.Add("epsilon", TokenType.Keyword);
-            ReservedKeywords.Add("dag2rad", TokenType.Keyword);
-            ReservedKeywords.Add("rad2deg", TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.NAN, TokenType.Constant);
+            ReservedKeywords.Add(Keywords.PINF, TokenType.Constant);
+            ReservedKeywords.Add(Keywords.NINF, TokenType.Constant);
+            ReservedKeywords.Add(Keywords.EPSILON, TokenType.Constant);
+            ReservedKeywords.Add(Keywords.PI, TokenType.Constant);
+            ReservedKeywords.Add(Keywords.DEG2RAD, TokenType.Constant);
+            ReservedKeywords.Add(Keywords.RAD2DEG, TokenType.Constant);
 
             ReservedKeywords.Add(Keywords.ABS, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.ACOS, TokenType.Keyword);
@@ -55,14 +57,14 @@ namespace Stationeers.Compiler
             ReservedKeywords.Add(Keywords.TRUNC, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.SELECT, TokenType.Keyword);
 
-            ReservedKeywords.Add("sla", TokenType.Keyword);
-            ReservedKeywords.Add("sll", TokenType.Keyword);
-            ReservedKeywords.Add("sra", TokenType.Keyword);
-            ReservedKeywords.Add("srl", TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.SLA, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.SLL, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.SRA, TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.SRL, TokenType.Keyword);
 
             ReservedKeywords.Add(Keywords.SLEEP, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.YIELD, TokenType.Keyword);
-            ReservedKeywords.Add("hcf", TokenType.Keyword);
+            ReservedKeywords.Add(Keywords.HCF, TokenType.Keyword);
 
             ReservedKeywords.Add(Keywords.AND, TokenType.Keyword);
             ReservedKeywords.Add(Keywords.NOR, TokenType.Keyword);
@@ -112,12 +114,26 @@ namespace Stationeers.Compiler
                     continue;
                 }
 
+                if (current == '$')
+                {
+                    string number = ReadNumberAsHex();
+                    tokens.Add(new Token(TokenType.Number, number));
+                    continue;
+                }
+
+                if (current == '%')
+                {
+                    string number = ReadNumberAsBin();
+                    tokens.Add(new Token(TokenType.Number, number));
+                    continue;
+                }
+
                 if (char.IsLetter(current) || current == '_')
                 {
                     string identifier = ReadIdentifier();
-                    if (ReservedKeywords.ContainsKey(identifier))
+                    if (ReservedKeywords.TryGetValue(identifier, out TokenType ttype))
                     {
-                        tokens.Add(new Token(TokenType.Keyword, identifier));
+                        tokens.Add(new Token(ttype, identifier));
                     }
                     else
                     {
@@ -130,7 +146,7 @@ namespace Stationeers.Compiler
                 switch (current)
                 {
                     case '!':
-                        tokens.Add(new Token(TokenType.Symbol_Not, "!"));
+                        tokens.Add(new Token(TokenType.Symbol_LogicalNot, "!"));
                         break;
                     case '=':
                         if (_position + 1 < _code.Length && _code[_position + 1] == '=')
@@ -279,7 +295,35 @@ namespace Stationeers.Compiler
             int start = _position;
 
             while (_position < _code.Length && (char.IsLetterOrDigit(_code[_position]) || _code[_position] == '_'))
+            {
                 _position++;
+            }
+            return _code.Substring(start, _position - start);
+        }
+
+        private string ReadNumberAsHex()
+        {
+            char[] hexdigits = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f' };
+
+            int start = _position++;
+            while (_position < _code.Length && hexdigits.Contains(_code[_position]))
+            {
+                _position++;
+            }
+
+            return _code.Substring(start, _position - start);
+        }
+
+        private string ReadNumberAsBin()
+        {
+            char[] bindigits = new char[] { '0', '1', '_' };
+
+            int start = _position++;
+            while (_position < _code.Length && bindigits.Contains(_code[_position]))
+            {
+                _position++;
+            }
+
             return _code.Substring(start, _position - start);
         }
 

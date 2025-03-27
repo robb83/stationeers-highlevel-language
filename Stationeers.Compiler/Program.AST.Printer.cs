@@ -187,6 +187,16 @@ namespace Stationeers.Compiler.AST
             {
                 Write(nn.Value);
             }
+            else if (n is ConstantNode constn)
+            {
+                Write(constn.Value);
+            }
+            else if (n is HashNode hashn)
+            {
+                Write("HASH(\"");
+                Write(hashn.Value);
+                Write("\")");
+            }
             else if (n is IdentifierNode idn)
             {
                 Write(idn.Identifier);

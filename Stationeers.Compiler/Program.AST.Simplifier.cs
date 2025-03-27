@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Reflection;
-using System.Security.AccessControl;
+using System.IO.Hashing;
+using System.Text;
 
 namespace Stationeers.Compiler.AST
 {
@@ -78,9 +78,9 @@ namespace Stationeers.Compiler.AST
                 var condition = Simplify(cln.Condition);
                 var statement = Simplify(cln.Statement);
 
-                if (condition is NumericNode)
+                if (Utils.IsValueNode(condition))
                 {
-                    if (IsTrue((NumericNode)condition))
+                    if (Utils.IsTrue(condition))
                     {
                         return new LoopNode(statement);
                     } 
@@ -98,9 +98,9 @@ namespace Stationeers.Compiler.AST
                 var statement = Simplify(csn.Statement);
                 var alternate = ( csn.Alternate != null ? Simplify(csn.Alternate) : (Node)null);
 
-                if (condition is NumericNode)
+                if (Utils.IsValueNode(condition))
                 {
-                    if (IsTrue((NumericNode)condition))
+                    if (Utils.IsTrue(condition))
                     {
                         return statement;
                     }
@@ -150,29 +150,29 @@ namespace Stationeers.Compiler.AST
                 var right = Simplify(bon.Right);
                 var op = bon.Operator;
 
-                if (left is NumericNode && right is NumericNode)
+                if (Utils.IsValueNode(left) && Utils.IsValueNode(right))
                 {
                     return Eval(left, right, op);
                 }
 
                 if (op == OperatorType.OpMul)
                 {
-                    if (left is NumericNode && IsOne((NumericNode)left))
+                    if (left is NumericNode && Utils.IsOne(left))
                     {
                         return right;
                     }
 
-                    if (left is NumericNode && IsZero((NumericNode)left))
+                    if (left is NumericNode && Utils.IsZero(left))
                     {
                         return new NumericNode("0");
                     }
 
-                    if (right is NumericNode && IsOne((NumericNode)right))
+                    if (right is NumericNode && Utils.IsOne(right))
                     {
                         return left;
                     }
 
-                    if (right is NumericNode && IsZero((NumericNode)right))
+                    if (right is NumericNode && Utils.IsZero(right))
                     {
                         return new NumericNode("0");
                     }
@@ -180,12 +180,12 @@ namespace Stationeers.Compiler.AST
 
                 if (op == OperatorType.OpAdd)
                 {
-                    if (left is NumericNode && IsZero((NumericNode)left))
+                    if (left is NumericNode && Utils.IsZero(left))
                     {
                         return right;
                     }
                     
-                    if (right is NumericNode && IsZero((NumericNode)right))
+                    if (right is NumericNode && Utils.IsZero(right))
                     {
                         return left;
                     }
@@ -194,12 +194,12 @@ namespace Stationeers.Compiler.AST
                 if (op == OperatorType.OpSub)
                 {
                     // TODO: same for identifiers
-                    if (right is NumericNode r && left is NumericNode l && IsEqual(l, r))
+                    if (right is NumericNode r && left is NumericNode l && Utils.IsEqual(l, r))
                     {
                         return new NumericNode("0");
                     }
                         
-                    if (right is NumericNode && IsZero((NumericNode)right))
+                    if (right is NumericNode && Utils.IsZero(right))
                     {
                         return left;
                     }
@@ -213,7 +213,7 @@ namespace Stationeers.Compiler.AST
                 var right = Simplify(con.Right);
                 var op = con.Operator;
 
-                if (left is NumericNode && right is NumericNode)
+                if (Utils.IsValueNode(left) && Utils.IsValueNode(right))
                 {
                     return Eval(left, right, op);
                 }
@@ -226,9 +226,9 @@ namespace Stationeers.Compiler.AST
                 var right = Simplify(logn.Right);
                 var op = logn.Operator;
 
-                if (left is NumericNode leftnn && right is NumericNode rightnn)
+                if (Utils.IsValueNode(left) && Utils.IsValueNode(right))
                 {
-                    return Eval(leftnn, rightnn, op);
+                    return Eval(left, right, op);
                 }
 
                 return new LogicalNode(left, logn.Operator, right);
@@ -254,6 +254,14 @@ namespace Stationeers.Compiler.AST
             {
                 return new NumericNode(nn.Value);
             }
+            else if (n is ConstantNode constn)
+            {
+                return new ConstantNode(constn.Value);
+            }
+            else if (n is HashNode hashn)
+            {
+                return new HashNode(hashn.Value);
+            }    
             else if (n is IdentifierNode idn)
             {
                 return Copy(idn);
@@ -292,17 +300,17 @@ namespace Stationeers.Compiler.AST
             return new IdentifierNode(idn.Identifier, index, idn.Property);
         }
 
-        private NumericNode Eval(NumericNode left, NumericNode right, LogicalOperatorType lop)
+        private NumericNode Eval(Node left, Node right, LogicalOperatorType lop)
         {
             bool result = false;
 
             switch (lop)
             {
                 case LogicalOperatorType.OpAnd:
-                    result = IsTrue(left) && IsTrue(right);
+                    result = Utils.IsTrue(left) && Utils.IsTrue(right);
                     break;
                 case LogicalOperatorType.OpOr:
-                    result = IsTrue(left) || IsTrue(right);
+                    result = Utils.IsTrue(left) || Utils.IsTrue(right);
                     break;
                 default:
                     throw new Exception("Not supported operation.");
@@ -313,25 +321,20 @@ namespace Stationeers.Compiler.AST
 
         private NumericNode Eval(Node left, Node right, OperatorType op)
         {
-            //TODO:  Nan, Infinite, ZeroDiveder
-
-            double l = Double.Parse(((NumericNode)left).Value, CultureInfo.InvariantCulture);
-            double r = Double.Parse(((NumericNode)right).Value, CultureInfo.InvariantCulture);
-
             double result;
             switch (op)
             {
                 case OperatorType.OpAdd:
-                    result = l + r;
+                    result = Utils.GetValue(left) + Utils.GetValue(right);
                     break;
                 case OperatorType.OpSub:
-                    result = l - r;
+                    result = Utils.GetValue(left) - Utils.GetValue(right);
                     break;
                 case OperatorType.OpMul:
-                    result = l * r;
+                    result = Utils.GetValue(left) * Utils.GetValue(right);
                     break;
                 case OperatorType.OpDiv:
-                    result = l / r;
+                    result = Utils.GetValue(left) / Utils.GetValue(right);
                     break;
                 default:
                     throw new Exception("Not supported operation.");
@@ -342,57 +345,32 @@ namespace Stationeers.Compiler.AST
 
         private NumericNode Eval(Node left, Node right, ComparsionOperatorType op)
         {
-            double l = Double.Parse(((NumericNode)left).Value, CultureInfo.InvariantCulture);
-            double r = Double.Parse(((NumericNode)right).Value, CultureInfo.InvariantCulture);
-
             bool result;
             switch (op)
             {
                 case ComparsionOperatorType.OpLess:
-                    result = l < r;
+                    result = Utils.GetValue(left) < Utils.GetValue(right);
                     break;
                 case ComparsionOperatorType.OpLessOrEqual:
-                    result = l <= r;
+                    result = Utils.GetValue(left) <= Utils.GetValue(right);
                     break;
                 case ComparsionOperatorType.OpEqual:
-                    result = l == r;
+                    result = Utils.GetValue(left) == Utils.GetValue(right);
                     break;
                 case ComparsionOperatorType.OpNotEqual:
-                    result = l != r;
+                    result = Utils.GetValue(left) != Utils.GetValue(right);
                     break;
                 case ComparsionOperatorType.OpGreater:
-                    result = l > r;
+                    result = Utils.GetValue(left) > Utils.GetValue(right);
                     break;
                 case ComparsionOperatorType.OpGreaterOrEqual:
-                    result = l >= r;
+                    result = Utils.GetValue(left) >= Utils.GetValue(right);
                     break;
                 default:
                     throw new Exception("Not supported operation.");
             }
 
             return new NumericNode( result ? "1" : "0" );
-        }
-
-        private bool IsEqual(NumericNode left, NumericNode right)
-        {
-            return String.Compare(left.Value, right.Value, StringComparison.Ordinal) == 0;
-        }
-
-        private bool IsZero(NumericNode nn)
-        {
-            double n = Double.Parse(nn.Value, CultureInfo.InvariantCulture);
-            return !(n != 0.0); // Or Math.Abs(n) < Double.Epsilon ?
-        }
-
-        private bool IsOne(NumericNode nn)
-        {
-            double n = Double.Parse(nn.Value, CultureInfo.InvariantCulture);
-            return n == 1.0;
-        }
-
-        private bool IsTrue(NumericNode nn)
-        {
-            return Double.Parse(nn.Value, CultureInfo.InvariantCulture) >= 1;
         }
     }
 }
