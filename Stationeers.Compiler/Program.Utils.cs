@@ -98,6 +98,12 @@ namespace Stationeers.Compiler
             return a == b;
         }
 
+        public static bool IsNotZero(Node nn)
+        {
+            double v = GetValue(nn);
+            return v != 0.0;
+        }
+
         public static bool IsZero(Node nn)
         {
             double v = GetValue(nn);

@@ -248,6 +248,12 @@ namespace Stationeers.Compiler
                     case ']':
                         tokens.Add(new Token(TokenType.Symbol_RightBracket, current.ToString()));
                         break;
+                    case '?':
+                        tokens.Add(new Token(TokenType.Symbol_QuestionMark, current.ToString()));
+                        break;
+                    case ':':
+                        tokens.Add(new Token(TokenType.Symbol_Colon, current.ToString()));
+                        break;
                     default:
                         throw new Exception($"Unexpected character: {current}");
                 }

@@ -412,7 +412,23 @@ namespace Stationeers.Compiler
 
         private Node ParseExpression()
         {
-            return ParseLogical();
+            return ParseTernary();
+        }
+
+        private Node ParseTernary()
+        {
+            var node = ParseLogical();
+
+            if (CheckCurrent(TokenType.Symbol_QuestionMark))
+            {
+                Consume();
+                var left = ParseLogical();
+                ConsumeIf(TokenType.Symbol_Colon);
+                var right = ParseLogical();
+                return new TernaryOpNode(node, left, right);
+            }
+
+            return node;
         }
 
         private Node ParseLogical()
@@ -581,7 +597,7 @@ namespace Stationeers.Compiler
             if (CheckCurrent(TokenType.Symbol_LeftParentheses))
             {
                 Consume();
-                Node expr = ParseExpression();
+                var expr = ParseExpression();
                 ConsumeIf(TokenType.Symbol_RightParentheses);
                 return expr;
             }

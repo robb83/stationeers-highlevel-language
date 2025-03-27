@@ -149,6 +149,16 @@ namespace Stationeers.Compiler.AST
                 Write(Convert(uon.Operator));
                 Print(uon.Expression, level);
             }
+            else if (n is TernaryOpNode ton)
+            {
+                Write("(");
+                Print(ton.Condition, level);
+                Write("?");
+                Print(ton.Left, level);
+                Write(":");
+                Print(ton.Right, level);
+                Write(")");
+            }
             else if (n is DeviceConfigNode dcn)
             {
                 Write(Keywords.DEVICE);
@@ -159,14 +169,14 @@ namespace Stationeers.Compiler.AST
                 {
                     Write(", ");
                     Write(dcn.Port);
-                } 
+                }
                 else if (dcn.Name != null)
                 {
                     Write(", \"");
                     Write(dcn.Name);
                     Write("\", ");
                     Write(dcn.BatchMode);
-                } 
+                }
                 else
                 {
                     Write(", ");

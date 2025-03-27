@@ -18,6 +18,8 @@
         Symbol_Comma,
         Symbol_Dot,
         Symbol_Semicolon,
+        Symbol_QuestionMark,
+        Symbol_Colon,
         Symbol_Equal,
         Symbol_EqualEqual,
         Symbol_NotEqual,

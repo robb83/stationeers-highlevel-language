@@ -233,6 +233,26 @@ namespace Stationeers.Compiler.AST
 
                 return new LogicalNode(left, logn.Operator, right);
             }
+            else if (n is TernaryOpNode ton)
+            {
+                var condition = Simplify(ton.Condition);
+                var left = Simplify(ton.Left);
+                var right = Simplify(ton.Right);
+
+                if (Utils.IsValueNode(condition))
+                {
+                    if (Utils.IsTrue(condition))
+                    {
+                        return left;
+                    }
+                    else
+                    {
+                        return right;
+                    }
+                }
+
+                return new TernaryOpNode(condition, left, right);
+            }
             else if (n is UnaryOpNode uon)
             {
                 var expr = Simplify(uon.Expression);
@@ -261,7 +281,7 @@ namespace Stationeers.Compiler.AST
             else if (n is HashNode hashn)
             {
                 return new HashNode(hashn.Value);
-            }    
+            }
             else if (n is IdentifierNode idn)
             {
                 return Copy(idn);

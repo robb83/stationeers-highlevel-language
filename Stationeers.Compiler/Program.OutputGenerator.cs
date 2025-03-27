@@ -257,6 +257,61 @@ namespace Stationeers.Compiler
 
                         break;
                     }
+                case TernaryOpNode ton:
+                    {
+                        IsConstantExpressionAndNotZero(ton.Condition, out bool constant, out bool isTrue);
+
+                        if (constant)
+                        {
+                            if (isTrue)
+                            {
+                                if (!GetNumericValueOrRegister(ton.Left, r, out string a1))
+                                {
+                                    Console.WriteLine($"move r{r} {a1}");
+                                }
+                            }
+                            else
+                            {
+                                if (!GetNumericValueOrRegister(ton.Right, r, out string a2))
+                                {
+                                    Console.WriteLine($"move r{r} {a2}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var rt = r;
+                            int count = 0;
+                            var reserved = new int[3];
+
+                            if (GetNumericValueOrRegister(ton.Condition, rt, out string a1))
+                            {
+                                rt = ReserveRegister();
+                                reserved[count++] = rt;
+                            }
+
+                            if (GetNumericValueOrRegister(ton.Left, rt, out string a2))
+                            {
+                                rt = ReserveRegister();
+                                reserved[count++] = rt;
+                            }
+
+                            if (GetNumericValueOrRegister(ton.Right, rt, out string a3))
+                            {
+                                rt = ReserveRegister();
+                                reserved[count++] = rt;
+                            }
+
+                            for (int i = 0; i < count; ++i)
+                            {
+                                FreeRegister(reserved[i]);
+                            }
+
+                            Console.WriteLine($"select r{r} {a1} {a2} {a3}");
+                        }
+
+                        break;
+                    }
                 case LogicalNode ln:
                     {
                         int ra = ReserveRegister();
@@ -533,6 +588,19 @@ namespace Stationeers.Compiler
                 default:
                     throw new Exception($"Not supported Node: {node?.GetType()?.Name}");
             }
+        }
+
+        private void IsConstantExpressionAndNotZero(Node n, out bool constant, out bool isTrue)
+        {
+            if (Utils.IsValueNode(n))
+            {
+                constant = true;
+                isTrue = Utils.IsNotZero(n);
+                return;
+            }
+
+            constant = false;
+            isTrue = false;
         }
 
         private void IsConstantExpressionAndTrue(Node n, out bool constant, out bool isTrue)

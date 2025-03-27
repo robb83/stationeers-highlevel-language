@@ -1,0 +1,8 @@
+var sensor = Device(StructureGasSensor, d0);
+var cooler = Device(StructureWallCooler, d1);
+
+loop
+{
+	cooler.On = sensor.Temperature > (cooler.On ? 300 : 400);
+	sleep(3);
+}

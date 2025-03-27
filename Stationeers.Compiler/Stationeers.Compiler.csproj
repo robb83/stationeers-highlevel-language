@@ -120,6 +120,9 @@
     <None Include="tests\test001.src">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="tests\test016.src">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="tests\test015.src">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

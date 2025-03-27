@@ -241,6 +241,18 @@ namespace Stationeers.Compiler.AST
         }
     }
 
+    public class TernaryOpNode : Node
+    {
+        public Node Condition, Left, Right;
+
+        public TernaryOpNode(Node condition, Node left, Node right)
+        {
+            Condition = condition;
+            Left = left;
+            Right = right;
+        }
+    }
+
     public class ComparisonNode : Node
     {
         public Node Left, Right;
