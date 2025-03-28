@@ -3,6 +3,6 @@ var cooler = Device(StructureWallCooler, d1);
 
 loop
 {
-	cooler.On = sensor.Temperature > (cooler.On ? 300 : 400);
+	cooler.On = sensor.Temperature > (cooler.On ? 274 : 303);
 	sleep(3);
 }

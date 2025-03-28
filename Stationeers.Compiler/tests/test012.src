@@ -1,5 +1,5 @@
 var switch = Device(StructureLogicSwitch, d0);
-var growLight = Device(StructureBattery, d1);
+var growLight = Device(StructureGrowLight, d1);
 var light = 1;
 
 loop
