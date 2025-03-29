@@ -7,20 +7,7 @@ __This program compiles a custom C-like language into Stationeers MIPS instructi
 
 ## Examples:
 
-<table>
-<tr>
-<td>Input</td>
-<td>Output</td>
-</tr>
-</tr>
-<tr>
-<td colspan="2">
-    Writes the external temperature to the attached memory and turns on all pumps on the network when the temperature drops below 410K (136.85°C).
-</td>
-</tr>
-<tr>
-<td valign="top">
-
+Writes the external temperature to the attached memory and turns on all pumps on the network when the temperature drops below 410K (136.85°C).
 ```csharp
 var memory = Device(StructureLogicMemory, d0);
 var sensor = Device(StructureGasSensor, "External Gas Sensor", Minimum);
@@ -33,9 +20,6 @@ while (1)
 }
 ```
 
-</td>
-<td valign="top">
-
 ```mips
 while_start001:
 lbn r0 -1252983604 1658757745 Temperature Minimum
@@ -47,16 +31,7 @@ j while_start001
 while_end001:
 ```
 
-</td>
-</tr>
-<tr>
-<td colspan="2">
-    Turns on the cooling device when the temperature exceeds 303K (29.85°C) and keep it on until the temperature drops below 295K (21.85°C).
-</td>
-</tr>
-<tr>
-<td valign="top">
-
+Turns on the cooling device when the temperature exceeds 303K (29.85°C) and keep it on until the temperature drops below 295K (21.85°C).
 ```csharp
 var sensor = Device(StructureGasSensor, d0);
 var cooler = Device(StructureWallCooler, d1);
@@ -67,9 +42,6 @@ loop
 	sleep(3);
 }
 ```
-
-</td>
-<td valign="top">
 
 ```mips
 loop_start001:
@@ -83,16 +55,7 @@ j loop_start001
 loop_end001:
 ```
 
-</td>
-</tr>
-<tr>
-<td colspan="2">
-    Toggle the GrowLight on and off every 10 minutes as long as the attached switch is turned on.
-</td>
-</tr>
-<tr>
-<td valign="top">
-
+Toggle the GrowLight on and off every 10 minutes as long as the attached switch is turned on.
 ```csharp
 var switch = Device(StructureLogicSwitch, d0);
 var growLight = Device(StructureGrowLight, d1);
@@ -115,9 +78,6 @@ loop
 }
 ```
 
-</td>
-<td valign="top">
-
 ```mips
 move r15 1
 loop_start001:
@@ -137,16 +97,7 @@ j loop_start001
 loop_end001:
 ```
 
-</td>
-</tr>
-<tr>
-<td colspan="2">
-    Turns on the generator when the battery level drops below 50% and charges it until it reaches 90% as long as the attached switch is turned on.
-</td>
-</tr>
-<tr>
-<td valign="top">
-
+Turns on the generator when the battery level drops below 50% and charges it until it reaches 90% as long as the attached switch is turned on.
 ```csharp
 var switch = Device(StructureLogicSwitch, d0);
 var battery = Device(StructureBattery, d1);
@@ -166,9 +117,6 @@ loop
 
 ```
 
-</td>
-<td valign="top">
-
 ```mips
 loop_start001:
 l r0 d0 Setting
@@ -185,11 +133,6 @@ if_end001:
 j loop_start001
 loop_end001:
 ```
-
-</td>
-</tr>
-</table>
-
 
 ## Language elements
 
