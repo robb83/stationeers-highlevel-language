@@ -3,11 +3,9 @@
     public enum TokenType
     {
         Comment,
-        Keyword,
         Identifier,
         Number,
         String,
-        Constant,
 
         Symbol_LeftParentheses,
         Symbol_RightParentheses,
@@ -18,15 +16,12 @@
         Symbol_Comma,
         Symbol_Dot,
         Symbol_Semicolon,
-        Symbol_QuestionMark,
         Symbol_Colon,
+        Symbol_QuestionMark,
+        Symbol_ExclamationMark,
         Symbol_Equal,
-        Symbol_EqualEqual,
-        Symbol_NotEqual,
         Symbol_LessThen,
-        Symbol_LessThenOrEqual,
         Symbol_GreaterThen,
-        Symbol_GreaterThenOrEqual,
         Symbol_Plus,
         Symbol_Minus,
         Symbol_Asterik,
@@ -34,9 +29,6 @@
         Symbol_And,
         Symbol_Pipe,
         Symbol_Tilde,
-        Symbol_Hat,
-        Symbol_LogicalNot,
-        Symbol_LogicalOr,
-        Symbol_LogicalAnd
+        Symbol_Hat
     }
 }

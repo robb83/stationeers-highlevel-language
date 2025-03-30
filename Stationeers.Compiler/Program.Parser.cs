@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO.Hashing;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Stationeers.Compiler.AST;
 
@@ -11,46 +12,25 @@ namespace Stationeers.Compiler
         private readonly List<Token> _tokens;
         private int _position = 0;
         private Dictionary<string, string> _variables;
-        private List<TokenType> _comparsionOperators;
-        private List<TokenType> _termOperators;
-        private List<TokenType> _factorOperators;
-        private List<TokenType> _logicOperators;
-        private List<String> _builtInFunctions;
+        private HashSet<string> _constants;
+        private HashSet<string> _keywords;
+        private HashSet<String> _builtInFunctions;
+        private HashSet<String> _builtInMethods;
+        private HashSet<String> _batchModes;
 
         public Parser(List<Token> tokens)
         {
             this._tokens = tokens;
             this._variables = new Dictionary<string, string>();
 
-            _comparsionOperators = new List<TokenType>
+            _builtInMethods = new HashSet<string>
             {
-                TokenType.Symbol_EqualEqual,
-                TokenType.Symbol_NotEqual,
-                TokenType.Symbol_LessThen,
-                TokenType.Symbol_LessThenOrEqual,
-                TokenType.Symbol_GreaterThen,
-                TokenType.Symbol_GreaterThenOrEqual
+                Keywords.HCF,
+                Keywords.SLEEP,
+                Keywords.YIELD
             };
 
-            _termOperators = new List<TokenType>
-            {
-                TokenType.Symbol_Plus,
-                TokenType.Symbol_Minus
-            };
-
-            _factorOperators = new List<TokenType>
-            {
-                TokenType.Symbol_Asterik,
-                TokenType.Symbol_Slash
-            };
-
-            _logicOperators = new List<TokenType>
-            {
-                TokenType.Symbol_LogicalAnd,
-                TokenType.Symbol_LogicalOr
-            };
-
-            _builtInFunctions = new List<string>
+            _builtInFunctions = new HashSet<string>
             {
                 Keywords.RAND,
                 Keywords.ABS,
@@ -82,6 +62,41 @@ namespace Stationeers.Compiler
                 Keywords.SRA,
                 Keywords.SRL
             };
+
+            _constants = new HashSet<string>
+            {
+                Keywords.NAN,
+                Keywords.PINF,
+                Keywords.NINF,
+                Keywords.EPSILON,
+                Keywords.PI,
+                Keywords.DEG2RAD,
+                Keywords.RAD2DEG,
+            };
+
+            _keywords = new HashSet<string>
+            {
+                Keywords.VAR,
+                Keywords.WHILE,
+                Keywords.IF,
+                Keywords.ELIF,
+                Keywords.ELSE,
+                Keywords.RETURN,
+                Keywords.BREAK,
+                Keywords.CONTINUE,
+                Keywords.DEVICE,
+                Keywords.LOOP,
+                Keywords.DEF,
+                Keywords.FN
+            };
+
+            _batchModes = new HashSet<string>
+            {
+                Keywords.AVERAGE,
+                Keywords.MAXIMUM,
+                Keywords.MINIMUM,
+                Keywords.SUM
+            };
         }
 
         public ProgramNode Parse()
@@ -99,51 +114,47 @@ namespace Stationeers.Compiler
 
         private Node ParseStatement()
         {
-            if (CheckCurrent(TokenType.Keyword, Keywords.VAR))
+            if (CheckCurrent(TokenType.Identifier, Keywords.VAR))
             {
                 return ParseVariableDecleration();
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.LOOP))
+            else if (CheckCurrent(TokenType.Identifier, Keywords.LOOP))
             {
                 return ParseLoopStatement();
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.WHILE))
+            else if (CheckCurrent(TokenType.Identifier, Keywords.WHILE))
             {
                 return ParseConditionalLoopStatement();
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.IF))
+            else if (CheckCurrent(TokenType.Identifier, Keywords.IF))
             {
                 return ParseIfStatement();
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.BREAK))
+            else if (CheckCurrent(TokenType.Identifier, Keywords.BREAK))
             {
                 return ParseBreakNode();
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.CONTINUE))
+            else if (CheckCurrent(TokenType.Identifier, Keywords.CONTINUE))
             {
                 return ParseContinueNode();
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.DEVICE))
+            else if (CheckCurrent(TokenType.Identifier, Keywords.DEVICE))
             {
                 return ParseDeviceConfig();
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.YIELD))
+            else if (CheckCurrent(TokenType.Identifier, _builtInMethods))
             {
                 return ParseFunctionCall(true);
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.SLEEP))
+            else if (CheckCurrent(TokenType.Identifier, _keywords) || CheckCurrent(TokenType.Identifier, _constants))
             {
-                return ParseFunctionCall(true);
+                throw new Exception("Syntax error or not supported token.");
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.HCF))
-            {
-                return ParseFunctionCall(true);
-            }
-            else if (_tokens[_position].Type == TokenType.Identifier)
+            else if (CheckCurrent(TokenType.Identifier))
             {
                 return ParseAssigment();
             }
-            else if (_tokens[_position].Type == TokenType.Symbol_LeftBrace)
+            else if (CheckCurrent(TokenType.Symbol_LeftBrace))
             {
                 Consume(); // {
 
@@ -233,10 +244,7 @@ namespace Stationeers.Compiler
 
         private bool IsBatchMode(String value)
         {
-            return String.Compare("Average", value, StringComparison.Ordinal) == 0
-                || String.Compare("Minimum", value, StringComparison.Ordinal) == 0
-                || String.Compare("Maximum", value, StringComparison.Ordinal) == 0
-                || String.Compare("Sum", value, StringComparison.Ordinal) == 0;
+            return _batchModes.Contains(value);
         }
 
         private bool IsDevicePort(String value)
@@ -322,11 +330,11 @@ namespace Stationeers.Compiler
 
             statement = ParseStatement();
 
-            if (CheckCurrent(TokenType.Keyword, Keywords.ELIF))
+            if (CheckCurrent(TokenType.Identifier, Keywords.ELIF))
             {
                 alternate = ParseIfStatement();
             }
-            else if (CheckCurrent(TokenType.Keyword, Keywords.ELSE))
+            else if (CheckCurrent(TokenType.Identifier, Keywords.ELSE))
             {
                 Consume();
                 alternate = ParseStatement();
@@ -433,25 +441,86 @@ namespace Stationeers.Compiler
 
         private Node ParseLogical()
         {
-            var node = ParseComparsion();
+            var node = ParseComparison();
 
-            while (_position < _tokens.Count && _logicOperators.Contains(_tokens[_position].Type))
+            while (_position < _tokens.Count)
             {
-                var op = ConvertToLogical(_tokens[_position++].Type);
-                node = new LogicalNode(node, op, ParseComparsion());
+                if (CheckCurrent(TokenType.Symbol_Pipe) && CheckNext(TokenType.Symbol_Pipe))
+                {
+                    Consume();
+                    Consume();
+
+                    node = new LogicalNode(node, LogicalOperatorType.OpOr, ParseComparison());
+                } 
+                else if (CheckCurrent(TokenType.Symbol_And) && CheckNext(TokenType.Symbol_And))
+                {
+                    Consume();
+                    Consume();
+
+                    node = new LogicalNode(node, LogicalOperatorType.OpAnd, ParseComparison());
+                }
+                else
+                {
+                    break;
+                }
             }
 
             return node;
         }
 
-        private Node ParseComparsion()
+        private Node ParseComparison()
         {
             var node = ParseUnary();
 
-            while (_position < _tokens.Count && _comparsionOperators.Contains(_tokens[_position].Type))
+            while (_position < _tokens.Count)
             {
-                var op = ConvertToComparsion(_tokens[_position++].Type);
-                node = new ComparisonNode(node, op, ParseUnary());
+                if (CheckCurrent(TokenType.Symbol_Equal) && CheckNext(TokenType.Symbol_Equal))
+                {
+                    Consume();
+                    Consume();
+
+                    node = new ComparisonNode(node, ComparisonOperatorType.OpEqual, ParseUnary());
+                }
+                else if (CheckCurrent(TokenType.Symbol_ExclamationMark) && CheckNext(TokenType.Symbol_Equal))
+                {
+                    Consume();
+                    Consume();
+
+                    node = new ComparisonNode(node, ComparisonOperatorType.OpNotEqual, ParseUnary());
+                }
+                else if (CheckCurrent(TokenType.Symbol_LessThen))
+                {
+                    Consume();
+
+                    if (CheckCurrent(TokenType.Symbol_Equal))
+                    {
+                        Consume();
+
+                        node = new ComparisonNode(node, ComparisonOperatorType.OpLessOrEqual, ParseUnary());
+                    }
+                    else
+                    {
+                        node = new ComparisonNode(node, ComparisonOperatorType.OpLess, ParseUnary());
+                    }
+                }
+                else if (CheckCurrent(TokenType.Symbol_GreaterThen))
+                {
+                    Consume();
+
+                    if (CheckCurrent(TokenType.Symbol_Equal))
+                    {
+                        Consume();
+                        node = new ComparisonNode(node, ComparisonOperatorType.OpGreaterOrEqual, ParseUnary());
+                    }
+                    else
+                    {
+                        node = new ComparisonNode(node, ComparisonOperatorType.OpGreater, ParseUnary());
+                    }
+                }
+                else
+                {
+                    break;
+                }
             }
 
             return node;
@@ -459,7 +528,7 @@ namespace Stationeers.Compiler
 
         private Node ParseUnary()
         {
-            if (CheckCurrent(TokenType.Symbol_LogicalNot))
+            if (CheckCurrent(TokenType.Symbol_ExclamationMark))
             {
                 Consume();
                 var op = UnaryOperationType.OpNot;
@@ -473,10 +542,24 @@ namespace Stationeers.Compiler
         {
             var node = ParseFactor();
 
-            while (_position < _tokens.Count && _termOperators.Contains(_tokens[_position].Type))
+            while (_position < _tokens.Count)
             {
-                var op = ConvertToOperator(_tokens[_position++].Type);
-                node = new BinaryOpNode(node, op, ParseFactor());
+                if (CheckCurrent(TokenType.Symbol_Plus))
+                {
+                    Consume();
+
+                    node = new BinaryOpNode(node, ArithmeticOperatorType.OpAdd, ParseFactor());
+                }
+                else if (CheckCurrent(TokenType.Symbol_Minus))
+                {
+                    Consume();
+
+                    node = new BinaryOpNode(node, ArithmeticOperatorType.OpSub, ParseFactor());
+                }
+                else
+                {
+                    break;
+                }
             }
 
             return node;
@@ -486,10 +569,24 @@ namespace Stationeers.Compiler
         {
             var node = ParsePrimary();
 
-            while (_position < _tokens.Count && _factorOperators.Contains(_tokens[_position].Type))
+            while (_position < _tokens.Count)
             {
-                var op = ConvertToOperator(_tokens[_position++].Type);
-                node = new BinaryOpNode(node, op, ParsePrimary());
+                if (CheckCurrent(TokenType.Symbol_Asterik))
+                {
+                    Consume();
+
+                    node = new BinaryOpNode(node, ArithmeticOperatorType.OpMul, ParsePrimary());
+                }
+                else if (CheckCurrent(TokenType.Symbol_Slash))
+                {
+                    Consume();
+
+                    node = new BinaryOpNode(node, ArithmeticOperatorType.OpDiv, ParsePrimary());
+                }
+                else
+                {
+                    break;
+                }
             }
 
             return node;
@@ -521,7 +618,7 @@ namespace Stationeers.Compiler
                 return new NumericNode(_tokens[_position++].Value);
             }
 
-            if (CheckCurrent(TokenType.Constant))
+            if (CheckCurrent(TokenType.Identifier, _constants))
             {
                 if (Utils.IsConstantExpression(_tokens[_position].Value))
                 {
@@ -531,6 +628,34 @@ namespace Stationeers.Compiler
                 {
                     throw new Exception($"Not supported constant: {_tokens[_position].Value}.");
                 }
+            }
+
+            if (CheckCurrent(TokenType.Identifier, Keywords.HASH))
+            {
+                Consume();
+                ConsumeIf(TokenType.Symbol_LeftParentheses);
+                var token = ConsumeIf(TokenType.String);
+                ConsumeIf(TokenType.Symbol_RightParentheses);
+
+                return new HashNode(token.Value);
+            }
+
+            if (CheckCurrent(TokenType.Identifier, Keywords.DEVICE))
+            {
+                return ParseDeviceConfig();
+            }
+
+            if (CheckCurrent(TokenType.Identifier, _builtInFunctions))
+            {
+                return ParseFunctionCall();
+            }
+
+            if (CheckCurrent(TokenType.Symbol_LeftParentheses))
+            {
+                Consume();
+                var expr = ParseExpression();
+                ConsumeIf(TokenType.Symbol_RightParentheses);
+                return expr;
             }
 
             if (CheckCurrent(TokenType.Identifier))
@@ -586,34 +711,6 @@ namespace Stationeers.Compiler
                 }
 
                 return new IdentifierNode(identifier.Value, index, property?.Value);
-            }
-
-            if (CheckCurrent(TokenType.Keyword, Keywords.HASH))
-            {
-                Consume();
-                ConsumeIf(TokenType.Symbol_LeftParentheses);
-                var token = ConsumeIf(TokenType.String);
-                ConsumeIf(TokenType.Symbol_RightParentheses);
-
-                return new HashNode(token.Value);
-            }
-
-            if (CheckCurrent(TokenType.Keyword, Keywords.DEVICE))
-            {
-                return ParseDeviceConfig();
-            }
-
-            if (CheckCurrent(TokenType.Keyword, _builtInFunctions))
-            {
-                return ParseFunctionCall();
-            }
-
-            if (CheckCurrent(TokenType.Symbol_LeftParentheses))
-            {
-                Consume();
-                var expr = ParseExpression();
-                ConsumeIf(TokenType.Symbol_RightParentheses);
-                return expr;
             }
 
             throw new Exception($"Not supported expression token.");
@@ -686,60 +783,10 @@ namespace Stationeers.Compiler
             return _position < _tokens.Count && _tokens[_position].Type == type && String.Compare(value, _tokens[_position].Value, StringComparison.Ordinal) == 0;
         }
 
-        private bool CheckCurrent(TokenType type, List<String> keywords)
+        private bool CheckCurrent(TokenType type, HashSet<String> words)
         {
-            return _position < _tokens.Count && _tokens[_position].Type == type && keywords.Contains(_tokens[_position].Value);
+            return _position < _tokens.Count && _tokens[_position].Type == type && words.Contains(_tokens[_position].Value);
         }
 
-        private LogicalOperatorType ConvertToLogical(TokenType tt)
-        {
-            switch (tt)
-            {
-                case TokenType.Symbol_LogicalAnd:
-                    return LogicalOperatorType.OpAnd;
-                case TokenType.Symbol_LogicalOr:
-                    return LogicalOperatorType.OpOr;
-                default:
-                    throw new Exception($"Not supported logical operation type: {tt}.");
-            }
-        }
-
-        private ComparsionOperatorType ConvertToComparsion(TokenType tt)
-        {
-            switch (tt)
-            {
-                case TokenType.Symbol_EqualEqual:
-                    return ComparsionOperatorType.OpEqual;
-                case TokenType.Symbol_NotEqual:
-                    return ComparsionOperatorType.OpNotEqual;
-                case TokenType.Symbol_LessThen:
-                    return ComparsionOperatorType.OpLess;
-                case TokenType.Symbol_LessThenOrEqual:
-                    return ComparsionOperatorType.OpLessOrEqual;
-                case TokenType.Symbol_GreaterThen:
-                    return ComparsionOperatorType.OpGreater;
-                case TokenType.Symbol_GreaterThenOrEqual:
-                    return ComparsionOperatorType.OpGreaterOrEqual;
-                default:
-                    throw new Exception($"Not supported comparsion operation type: {tt}.");
-            }
-        }
-
-        private OperatorType ConvertToOperator(TokenType tt)
-        {
-            switch (tt)
-            {
-                case TokenType.Symbol_Plus:
-                    return OperatorType.OpAdd;
-                case TokenType.Symbol_Minus:
-                    return OperatorType.OpSub;
-                case TokenType.Symbol_Asterik:
-                    return OperatorType.OpMul;
-                case TokenType.Symbol_Slash:
-                    return OperatorType.OpDiv;
-                default:
-                    throw new Exception($"Not supported Operation Type: {tt}.");
-            }
-        }
     }
 }

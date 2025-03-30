@@ -270,38 +270,38 @@ namespace Stationeers.Compiler.AST
             }
         }
 
-        private String Convert(ComparsionOperatorType t)
+        private String Convert(ComparisonOperatorType t)
         {
             switch (t)
             {
-                case ComparsionOperatorType.OpLess:
+                case ComparisonOperatorType.OpLess:
                     return "<";
-                case ComparsionOperatorType.OpLessOrEqual:
+                case ComparisonOperatorType.OpLessOrEqual:
                     return "<=";
-                case ComparsionOperatorType.OpEqual:
+                case ComparisonOperatorType.OpEqual:
                     return "==";
-                case ComparsionOperatorType.OpNotEqual:
+                case ComparisonOperatorType.OpNotEqual:
                     return "!=";
-                case ComparsionOperatorType.OpGreater:
+                case ComparisonOperatorType.OpGreater:
                     return ">";
-                case ComparsionOperatorType.OpGreaterOrEqual:
+                case ComparisonOperatorType.OpGreaterOrEqual:
                     return ">=";
                 default:
                     throw new Exception($"Not supported operator ({t}).");
             }
         }
 
-        private String Convert(OperatorType t)
+        private String Convert(ArithmeticOperatorType t)
         {
             switch (t)
             {
-                case OperatorType.OpMul:
+                case ArithmeticOperatorType.OpMul:
                     return "*";
-                case OperatorType.OpDiv:
+                case ArithmeticOperatorType.OpDiv:
                     return "/";
-                case OperatorType.OpSub:
+                case ArithmeticOperatorType.OpSub:
                     return "-";
-                case OperatorType.OpAdd:
+                case ArithmeticOperatorType.OpAdd:
                     return "+";
                 default:
                     throw new Exception($"Not supported operator ({t}).");

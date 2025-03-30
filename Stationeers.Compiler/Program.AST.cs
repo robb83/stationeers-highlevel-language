@@ -13,7 +13,7 @@ namespace Stationeers.Compiler.AST
         OpOr
     }
 
-    public enum ComparsionOperatorType
+    public enum ComparisonOperatorType
     {
         OpEqual,
         OpNotEqual,
@@ -23,7 +23,7 @@ namespace Stationeers.Compiler.AST
         OpGreaterOrEqual
     }
 
-    public enum OperatorType
+    public enum ArithmeticOperatorType
     {
         OpAdd,
         OpSub,
@@ -231,9 +231,9 @@ namespace Stationeers.Compiler.AST
     public class BinaryOpNode : Node
     {
         public Node Left, Right;
-        public OperatorType Operator;
+        public ArithmeticOperatorType Operator;
 
-        public BinaryOpNode(Node left, OperatorType op, Node right)
+        public BinaryOpNode(Node left, ArithmeticOperatorType op, Node right)
         {
             Left = left;
             Operator = op;
@@ -256,9 +256,9 @@ namespace Stationeers.Compiler.AST
     public class ComparisonNode : Node
     {
         public Node Left, Right;
-        public ComparsionOperatorType Operator;
+        public ComparisonOperatorType Operator;
 
-        public ComparisonNode(Node left, ComparsionOperatorType op, Node right)
+        public ComparisonNode(Node left, ComparisonOperatorType op, Node right)
         {
             Left = left;
             Operator = op;

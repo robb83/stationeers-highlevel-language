@@ -196,16 +196,16 @@ namespace Stationeers.Compiler
 
                         switch (bop.Operator)
                         {
-                            case OperatorType.OpMul:
+                            case ArithmeticOperatorType.OpMul:
                                 Console.WriteLine($"mul r{r} {a1} {a2}");
                                 break;
-                            case OperatorType.OpDiv:
+                            case ArithmeticOperatorType.OpDiv:
                                 Console.WriteLine($"div r{r} {a1} {a2}");
                                 break;
-                            case OperatorType.OpAdd:
+                            case ArithmeticOperatorType.OpAdd:
                                 Console.WriteLine($"add r{r} {a1} {a2}");
                                 break;
-                            case OperatorType.OpSub:
+                            case ArithmeticOperatorType.OpSub:
                                 Console.WriteLine($"sub r{r} {a1} {a2}");
                                 break;
                             default:
@@ -233,26 +233,26 @@ namespace Stationeers.Compiler
 
                         switch (cop.Operator)
                         {
-                            case ComparsionOperatorType.OpEqual:
+                            case ComparisonOperatorType.OpEqual:
                                 Console.WriteLine($"seq r{r} {a1} {a2}");
                                 break;
-                            case ComparsionOperatorType.OpNotEqual:
+                            case ComparisonOperatorType.OpNotEqual:
                                 Console.WriteLine($"sne r{r} {a1} {a2}");
                                 break;
-                            case ComparsionOperatorType.OpLess:
+                            case ComparisonOperatorType.OpLess:
                                 Console.WriteLine($"slt r{r} {a1} {a2}");
                                 break;
-                            case ComparsionOperatorType.OpLessOrEqual:
+                            case ComparisonOperatorType.OpLessOrEqual:
                                 Console.WriteLine($"sle r{r} {a1} {a2}");
                                 break;
-                            case ComparsionOperatorType.OpGreater:
+                            case ComparisonOperatorType.OpGreater:
                                 Console.WriteLine($"sgt r{r} {a1} {a2}");
                                 break;
-                            case ComparsionOperatorType.OpGreaterOrEqual:
+                            case ComparisonOperatorType.OpGreaterOrEqual:
                                 Console.WriteLine($"sge r{r} {a1} {a2}");
                                 break;
                             default:
-                                throw new Exception($"Not supported comparsion operator: {cop.Operator}.");
+                                throw new Exception($"Not supported comparison operator: {cop.Operator}.");
                         }
 
                         break;
@@ -637,26 +637,26 @@ namespace Stationeers.Compiler
 
                 switch (cn.Operator)
                 {
-                    case ComparsionOperatorType.OpEqual:
+                    case ComparisonOperatorType.OpEqual:
                         Console.WriteLine($"bne r{r} {a1} {a2} {label}");
                         break;
-                    case ComparsionOperatorType.OpNotEqual:
+                    case ComparisonOperatorType.OpNotEqual:
                         Console.WriteLine($"beq r{r} {a1} {a2} {label}");
                         break;
-                    case ComparsionOperatorType.OpLess:
+                    case ComparisonOperatorType.OpLess:
                         Console.WriteLine($"bge r{r} {a1} {a2} {label}");
                         break;
-                    case ComparsionOperatorType.OpLessOrEqual:
+                    case ComparisonOperatorType.OpLessOrEqual:
                         Console.WriteLine($"bgt r{r} {a1} {a2} {label}");
                         break;
-                    case ComparsionOperatorType.OpGreater:
+                    case ComparisonOperatorType.OpGreater:
                         Console.WriteLine($"ble r{r} {a1} {a2} {label}");
                         break;
-                    case ComparsionOperatorType.OpGreaterOrEqual:
+                    case ComparisonOperatorType.OpGreaterOrEqual:
                         Console.WriteLine($"blt r{r} {a1} {a2} {label}");
                         break;
                     default:
-                        throw new Exception($"Not supported comparsion operator: {cn.Operator}.");
+                        throw new Exception($"Not supported comparison operator: {cn.Operator}.");
                 }
             }
             else if (n is LogicalNode ln)

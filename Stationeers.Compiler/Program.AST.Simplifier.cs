@@ -155,7 +155,7 @@ namespace Stationeers.Compiler.AST
                     return Eval(left, right, op);
                 }
 
-                if (op == OperatorType.OpMul)
+                if (op == ArithmeticOperatorType.OpMul)
                 {
                     if (left is NumericNode && Utils.IsOne(left))
                     {
@@ -178,7 +178,7 @@ namespace Stationeers.Compiler.AST
                     }
                 }
 
-                if (op == OperatorType.OpAdd)
+                if (op == ArithmeticOperatorType.OpAdd)
                 {
                     if (left is NumericNode && Utils.IsZero(left))
                     {
@@ -191,7 +191,7 @@ namespace Stationeers.Compiler.AST
                     }
                 }
 
-                if (op == OperatorType.OpSub)
+                if (op == ArithmeticOperatorType.OpSub)
                 {
                     // TODO: same for identifiers
                     if (right is NumericNode r && left is NumericNode l && Utils.IsEqual(l, r))
@@ -339,21 +339,21 @@ namespace Stationeers.Compiler.AST
             return new NumericNode(result ? "1" : "0");
         }
 
-        private NumericNode Eval(Node left, Node right, OperatorType op)
+        private NumericNode Eval(Node left, Node right, ArithmeticOperatorType op)
         {
             double result;
             switch (op)
             {
-                case OperatorType.OpAdd:
+                case ArithmeticOperatorType.OpAdd:
                     result = Utils.GetValue(left) + Utils.GetValue(right);
                     break;
-                case OperatorType.OpSub:
+                case ArithmeticOperatorType.OpSub:
                     result = Utils.GetValue(left) - Utils.GetValue(right);
                     break;
-                case OperatorType.OpMul:
+                case ArithmeticOperatorType.OpMul:
                     result = Utils.GetValue(left) * Utils.GetValue(right);
                     break;
-                case OperatorType.OpDiv:
+                case ArithmeticOperatorType.OpDiv:
                     result = Utils.GetValue(left) / Utils.GetValue(right);
                     break;
                 default:
@@ -363,27 +363,27 @@ namespace Stationeers.Compiler.AST
             return new NumericNode(result.ToString(CultureInfo.InvariantCulture));
         }
 
-        private NumericNode Eval(Node left, Node right, ComparsionOperatorType op)
+        private NumericNode Eval(Node left, Node right, ComparisonOperatorType op)
         {
             bool result;
             switch (op)
             {
-                case ComparsionOperatorType.OpLess:
+                case ComparisonOperatorType.OpLess:
                     result = Utils.GetValue(left) < Utils.GetValue(right);
                     break;
-                case ComparsionOperatorType.OpLessOrEqual:
+                case ComparisonOperatorType.OpLessOrEqual:
                     result = Utils.GetValue(left) <= Utils.GetValue(right);
                     break;
-                case ComparsionOperatorType.OpEqual:
+                case ComparisonOperatorType.OpEqual:
                     result = Utils.GetValue(left) == Utils.GetValue(right);
                     break;
-                case ComparsionOperatorType.OpNotEqual:
+                case ComparisonOperatorType.OpNotEqual:
                     result = Utils.GetValue(left) != Utils.GetValue(right);
                     break;
-                case ComparsionOperatorType.OpGreater:
+                case ComparisonOperatorType.OpGreater:
                     result = Utils.GetValue(left) > Utils.GetValue(right);
                     break;
-                case ComparsionOperatorType.OpGreaterOrEqual:
+                case ComparisonOperatorType.OpGreaterOrEqual:
                     result = Utils.GetValue(left) >= Utils.GetValue(right);
                     break;
                 default:

@@ -16,6 +16,12 @@ namespace Stationeers.Compiler
         public const String LOOP = "loop";
         public const String DEF = "def";
         public const String FN = "fn";
+
+        public const String AVERAGE = "Average";
+        public const String MINIMUM = "Minimum";
+        public const String MAXIMUM = "Maximum";
+        public const String SUM = "Sum";
+
         public const String HASH = "HASH";
 
         public const String PI = "pi";
