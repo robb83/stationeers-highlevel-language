@@ -7,6 +7,8 @@ namespace Stationeers.Compiler
     public class Lexer
     {
         private static readonly Dictionary<string, TokenType> ReservedKeywords;
+        private static readonly char[] BinDigits = new char[] { '0', '1', '_' };
+        private static readonly char[] HexDigits = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f' };
 
         private string _code;
         private int _position;
@@ -90,205 +92,180 @@ namespace Stationeers.Compiler
                 if (char.IsWhiteSpace(current))
                 {
                     _position++;
-                    continue;
                 }
-
-                if (current == '#')
+                else if (current == '#')
                 {
-                    string value = ReadComment();
-                    // tokens.Add(new Token(TokenType.Comment, value));
-                    continue;
+                    tokens.Add(ReadComment());
                 }
-
-                if (current == '"')
+                else if (current == '"')
                 {
-                    string value = ReadString();
-                    tokens.Add(new Token(TokenType.String, value));
-                    continue;
+                    tokens.Add(ReadString());
                 }
-
-                if (char.IsDigit(current) || (current == '-' && _position + 1 < _code.Length && (char.IsDigit(_code[_position + 1]) || _code[_position + 1] == '.')) || (current == '.' && _position + 1 < _code.Length && char.IsDigit(_code[_position + 1])))
+                else if (char.IsDigit(current) || (current == '.' && _position + 1 < _code.Length && char.IsDigit(_code[_position + 1])))
                 {
-                    string number = ReadNumber();
-                    tokens.Add(new Token(TokenType.Number, number));
-                    continue;
+                    tokens.Add(ReadNumber());
                 }
-
-                if (current == '$')
+                else if (current == '$')
                 {
-                    string number = ReadNumberAsHex();
-                    tokens.Add(new Token(TokenType.Number, number));
-                    continue;
+                    tokens.Add(ReadNumberAsHex());
                 }
-
-                if (current == '%')
+                else if (current == '%')
                 {
-                    string number = ReadNumberAsBin();
-                    tokens.Add(new Token(TokenType.Number, number));
-                    continue;
+                    tokens.Add(ReadNumberAsBin());
                 }
-
-                if (char.IsLetter(current) || current == '_')
+                else if (char.IsLetter(current) || current == '_')
                 {
-                    string identifier = ReadIdentifier();
-                    if (ReservedKeywords.TryGetValue(identifier, out TokenType ttype))
+                    tokens.Add(ReadIdentifierOrKeyword());
+                }
+                else
+                {
+                    switch (current)
                     {
-                        tokens.Add(new Token(ttype, identifier));
+                        case '=':
+                            if (_position + 1 < _code.Length && _code[_position + 1] == '=')
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_EqualEqual, "==", _position, ++_position));
+                            }
+                            else
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_Equal, "=", _position, _position));
+                            }
+                            break;
+                        case '>':
+                            if (_position + 1 < _code.Length && _code[_position + 1] == '=')
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_GreaterThenOrEqual, ">=", _position, ++_position));
+                            }
+                            else
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_GreaterThen, ">", _position, _position));
+                            }
+                            break;
+                        case '<':
+                            if (_position + 1 < _code.Length && _code[_position + 1] == '=')
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_LessThenOrEqual, "<=", _position, ++_position));
+                            }
+                            else
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_LessThen, ">", _position, _position));
+                            }
+                            break;
+                        case '&':
+                            if (_position + 1 < _code.Length && _code[_position + 1] == '&')
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_LogicalAnd, "&", _position, ++_position));
+                            }
+                            else
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_And, "&", _position, _position));
+                            }
+                            break;
+                        case '|':
+                            if (_position + 1 < _code.Length && _code[_position + 1] == '|')
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_LogicalOr, "|", _position, ++_position));
+                            }
+                            else
+                            {
+                                tokens.Add(new Token(TokenType.Symbol_Pipe, "|", _position, _position));
+                            }
+                            break;
+                        case '!':
+                            tokens.Add(new Token(TokenType.Symbol_LogicalNot, "!", _position, _position));
+                            break;
+                        case '~':
+                            tokens.Add(new Token(TokenType.Symbol_Tilde, "~", _position, _position));
+                            break;
+                        case '^':
+                            tokens.Add(new Token(TokenType.Symbol_Hat, "^", _position, _position));
+                            break;
+                        case '+':
+                            tokens.Add(new Token(TokenType.Symbol_Plus, "+", _position, _position));
+                            break;
+                        case '-':
+                            tokens.Add(new Token(TokenType.Symbol_Minus, "-", _position, _position));
+                            break;
+                        case '*':
+                            tokens.Add(new Token(TokenType.Symbol_Asterik, "*", _position, _position));
+                            break;
+                        case '/':
+                            tokens.Add(new Token(TokenType.Symbol_Slash, "/", _position, _position));
+                            break;
+                        case '(':
+                            tokens.Add(new Token(TokenType.Symbol_LeftParentheses, "(", _position, _position));
+                            break;
+                        case ')':
+                            tokens.Add(new Token(TokenType.Symbol_RightParentheses, ")", _position, _position));
+                            break;
+                        case '.':
+                            tokens.Add(new Token(TokenType.Symbol_Dot, ".", _position, _position));
+                            break;
+                        case ',':
+                            tokens.Add(new Token(TokenType.Symbol_Comma, ",", _position, _position));
+                            break;
+                        case '{':
+                            tokens.Add(new Token(TokenType.Symbol_LeftBrace, "{", _position, _position));
+                            break;
+                        case '}':
+                            tokens.Add(new Token(TokenType.Symbol_RightBrace, "}", _position, _position));
+                            break;
+                        case ';':
+                            tokens.Add(new Token(TokenType.Symbol_Semicolon, ";", _position, _position));
+                            break;
+                        case '[':
+                            tokens.Add(new Token(TokenType.Symbol_LeftBracket, "[", _position, _position));
+                            break;
+                        case ']':
+                            tokens.Add(new Token(TokenType.Symbol_RightBracket, "]", _position, _position));
+                            break;
+                        case '?':
+                            tokens.Add(new Token(TokenType.Symbol_QuestionMark, "?", _position, _position));
+                            break;
+                        case ':':
+                            tokens.Add(new Token(TokenType.Symbol_Colon, ":", _position, _position));
+                            break;
+                        default:
+                            throw new Exception($"Unexpected character: {current}");
                     }
-                    else
-                    {
-                        tokens.Add(new Token(TokenType.Identifier, identifier));
-                    }
 
-                    continue;
+                    _position++;
                 }
-
-                switch (current)
-                {
-                    case '!':
-                        tokens.Add(new Token(TokenType.Symbol_LogicalNot, "!"));
-                        break;
-                    case '=':
-                        if (_position + 1 < _code.Length && _code[_position + 1] == '=')
-                        {
-                            _position++;
-                            tokens.Add(new Token(TokenType.Symbol_EqualEqual, "=="));
-                        }
-                        else
-                        {
-                            tokens.Add(new Token(TokenType.Symbol_Equal, "="));
-                        }
-                        break;
-                    case '>':
-                        if (_position + 1 < _code.Length && _code[_position + 1] == '=')
-                        {
-                            _position++;
-                            tokens.Add(new Token(TokenType.Symbol_GreaterThenOrEqual, ">="));
-                        }
-                        else
-                        {
-                            tokens.Add(new Token(TokenType.Symbol_GreaterThen, ">"));
-                        }
-                        break;
-                    case '<':
-                        if (_position + 1 < _code.Length && _code[_position + 1] == '=')
-                        {
-                            _position++;
-                            tokens.Add(new Token(TokenType.Symbol_LessThenOrEqual, "<="));
-                        }
-                        else
-                        {
-                            tokens.Add(new Token(TokenType.Symbol_LessThen, ">"));
-                        }
-                        break;
-                    case '&':
-                        if (_position + 1 < _code.Length && _code[_position + 1] == '&')
-                        {
-                            _position++;
-                            tokens.Add(new Token(TokenType.Symbol_LogicalAnd, "&"));
-                        }
-                        else
-                        {
-                            tokens.Add(new Token(TokenType.Symbol_And, "&"));
-                        }
-                        break;
-                    case '|':
-                        if (_position + 1 < _code.Length && _code[_position + 1] == '|')
-                        {
-                            _position++;
-                            tokens.Add(new Token(TokenType.Symbol_LogicalOr, "|"));
-                        }
-                        else
-                        {
-                            tokens.Add(new Token(TokenType.Symbol_Pipe, "|"));
-                        }
-                        break;
-                    case '~':
-                        tokens.Add(new Token(TokenType.Symbol_Tilde, "~"));
-                        break;
-                    case '^':
-                        tokens.Add(new Token(TokenType.Symbol_Hat, "^"));
-                        break;
-                    case '+':
-                        tokens.Add(new Token(TokenType.Symbol_Plus, "+"));
-                        break;
-                    case '-':
-                        tokens.Add(new Token(TokenType.Symbol_Minus, "-"));
-                        break;
-                    case '*':
-                        tokens.Add(new Token(TokenType.Symbol_Asterik, "*"));
-                        break;
-                    case '/':
-                        tokens.Add(new Token(TokenType.Symbol_Slash, "/"));
-                        break;
-                    case '(':
-                        tokens.Add(new Token(TokenType.Symbol_LeftParentheses, "("));
-                        break;
-                    case ')':
-                        tokens.Add(new Token(TokenType.Symbol_RightParentheses, ")"));
-                        break;
-                    case '.':
-                        tokens.Add(new Token(TokenType.Symbol_Dot, "."));
-                        break;
-                    case ',':
-                        tokens.Add(new Token(TokenType.Symbol_Comma, ","));
-                        break;
-                    case '{':
-                        tokens.Add(new Token(TokenType.Symbol_LeftBrace, "{"));
-                        break;
-                    case '}':
-                        tokens.Add(new Token(TokenType.Symbol_RightBrace, "}"));
-                        break;
-                    case ';':
-                        tokens.Add(new Token(TokenType.Symbol_Semicolon, current.ToString()));
-                        break;
-                    case '[':
-                        tokens.Add(new Token(TokenType.Symbol_LeftBracket, current.ToString()));
-                        break;
-                    case ']':
-                        tokens.Add(new Token(TokenType.Symbol_RightBracket, current.ToString()));
-                        break;
-                    case '?':
-                        tokens.Add(new Token(TokenType.Symbol_QuestionMark, current.ToString()));
-                        break;
-                    case ':':
-                        tokens.Add(new Token(TokenType.Symbol_Colon, current.ToString()));
-                        break;
-                    default:
-                        throw new Exception($"Unexpected character: {current}");
-                }
-
-                _position++;
             }
 
             return tokens;
         }
 
-        private string ReadComment()
+        private Token ReadComment()
         {
-            int start = _position + 1;
+            int start = _position++; // #
+
             while (_position < _code.Length && _code[_position] != '\n')
             {
                 _position++;
             }
 
-            return _code.Substring(start, _position - start);
+            return new Token(TokenType.Comment, _code.Substring(start, _position - start), start, _position - 1);
         }
 
-        private string ReadString()
+        private Token ReadString()
         {
-            _position++; // "
-
+            int begin = _position++; // "
             int start = _position;
+
             while (_position < _code.Length && _code[_position] != '"')
             {
+                if (_code[_position] == '\\' && _position + 1 < _code.Length && _code[_position + 1] == '\"')
+                {
+                    ++_position;
+                }
+
                 _position++;
             }
 
             if (_position < _code.Length && _code[_position] == '"')
             {
-                _position++; // "
-                return _code.Substring(start, _position - start - 1);
+                return new Token(TokenType.String, _code.Substring(start, _position - start - 1), begin, _position++);
             }
             else
             {
@@ -296,7 +273,7 @@ namespace Stationeers.Compiler
             }
         }
 
-        private string ReadIdentifier()
+        private Token ReadIdentifierOrKeyword()
         {
             int start = _position;
 
@@ -304,50 +281,58 @@ namespace Stationeers.Compiler
             {
                 _position++;
             }
-            return _code.Substring(start, _position - start);
+
+            String identifier = _code.Substring(start, _position - start);
+
+            if (ReservedKeywords.TryGetValue(identifier, out TokenType ttype))
+            {
+                return new Token(ttype, identifier, start, _position - 1);
+            }
+            else
+            {
+                return new Token(TokenType.Identifier, identifier, start, _position - 1);
+            }
         }
 
-        private string ReadNumberAsHex()
+        private Token ReadNumberAsHex()
         {
-            char[] hexdigits = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f' };
-
             int start = _position++;
-            while (_position < _code.Length && hexdigits.Contains(_code[_position]))
+            while (_position < _code.Length && HexDigits.Contains(_code[_position]))
             {
                 _position++;
             }
 
-            return _code.Substring(start, _position - start);
+            return new Token(TokenType.Number, _code.Substring(start, _position - start), start, _position - 1);
         }
 
-        private string ReadNumberAsBin()
+        private Token ReadNumberAsBin()
         {
-            char[] bindigits = new char[] { '0', '1', '_' };
-
             int start = _position++;
-            while (_position < _code.Length && bindigits.Contains(_code[_position]))
+            while (_position < _code.Length && BinDigits.Contains(_code[_position]))
             {
                 _position++;
             }
 
-            return _code.Substring(start, _position - start);
+            return new Token(TokenType.Number, _code.Substring(start, _position - start), start, _position - 1);
         }
 
-        private string ReadNumber()
+        private Token ReadNumber()
         {
             int start = _position;
             bool hasDot = false;
-            bool hasMinus = false;
 
-            if (_code[_position] == '-')
+            if (_code[_position] == '.')
             {
-                hasMinus = true;
+                hasDot = true;
                 _position++;
             }
 
-            while (_position < _code.Length && (char.IsDigit(_code[_position]) || (!hasDot && _code[_position] == '.') ))
+            while (_position < _code.Length && (char.IsDigit(_code[_position]) || (!hasDot && _code[_position] == '.')))
+            {
                 _position++;
-            return _code.Substring(start, _position - start);
+            }
+
+            return new Token(TokenType.Number, _code.Substring(start, _position - start), start, _position - 1);
         }
     }
 }

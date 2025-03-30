@@ -62,16 +62,34 @@ namespace Stationeers.Compiler
                     throw new Exception($"Invalid number literal ({nn.Value}).");
                 }
 
-                if (nn.Value[0] == '%')
+                int offset = 0;
+                bool negative = false;
+
+                if (nn.Value[offset] == '+')
                 {
-                    return Convert.ToInt64(nn.Value.Substring(1).Replace("_", ""), 2);
-                } 
-                else if (nn.Value[0] == '$')
+                    ++offset;
+                }
+                else if (nn.Value[offset] == '-')
                 {
-                    return Convert.ToInt64(nn.Value.Substring(1), 16);
+                    ++offset;
+                    negative = true;
                 }
 
-                return Double.Parse(nn.Value, CultureInfo.InvariantCulture);
+                if (offset < nn.Value.Length)
+                {
+                    if (nn.Value[offset] == '%')
+                    {
+                        var value = Convert.ToInt64(nn.Value.Substring(offset + 1).Replace("_", ""), 2);
+                        return (negative ? -value : value);
+                    }
+                    else if (nn.Value[offset] == '$')
+                    {
+                        var value = Convert.ToInt64(nn.Value.Substring(offset + 1), 16);
+                        return (negative ? -value : value);
+                    }
+
+                    return Double.Parse(nn.Value, CultureInfo.InvariantCulture);
+                }
             }
             else if (n is ConstantNode constn)
             {

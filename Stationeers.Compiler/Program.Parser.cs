@@ -502,6 +502,20 @@ namespace Stationeers.Compiler
                 return new StringNode(_tokens[_position++].Value);
             }
 
+            if (CheckCurrent(TokenType.Symbol_Minus) && CheckNext(TokenType.Number))
+            {
+                _position++; // -
+
+                return new NumericNode("-" + _tokens[_position++].Value);
+            }
+
+            if (CheckCurrent(TokenType.Symbol_Plus) && CheckNext(TokenType.Number))
+            {
+                _position++; // +
+
+                return new NumericNode(_tokens[_position++].Value);
+            }
+
             if (CheckCurrent(TokenType.Number))
             {
                 return new NumericNode(_tokens[_position++].Value);
@@ -655,6 +669,11 @@ namespace Stationeers.Compiler
         private bool Until(TokenType type)
         {
             return _position < _tokens.Count && _tokens[_position].Type != type;
+        }
+
+        private bool CheckNext(TokenType type)
+        {
+            return _position + 1 < _tokens.Count && _tokens[_position + 1].Type == type;
         }
 
         private bool CheckCurrent(TokenType type)
