@@ -1,0 +1,7 @@
+name: stationeers_highlevel_compiler
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: ^3.7.2
+dependencies:
+  archive: ^4.0.5

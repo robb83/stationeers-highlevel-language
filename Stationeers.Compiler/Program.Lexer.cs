@@ -32,7 +32,7 @@ namespace Stationeers.Compiler
                 }
                 else if (current == '#')
                 {
-                    tokens.Add(ReadComment());
+                    ReadComment(); // ignore comment
                 }
                 else if (current == '"')
                 {
@@ -167,7 +167,7 @@ namespace Stationeers.Compiler
 
             if (_position < _code.Length && _code[_position] == '"')
             {
-                return new Token(TokenType.String, _code.Substring(start, _position - start - 1), begin, _position++);
+                return new Token(TokenType.String, _code.Substring(start, _position - start), begin, _position++);
             }
             else
             {

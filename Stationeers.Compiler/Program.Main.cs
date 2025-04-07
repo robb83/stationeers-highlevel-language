@@ -24,7 +24,7 @@ namespace Stationeers.Compiler
                 var parser = new Parser(tokens);
                 var program = parser.Parse();
                 var generator = new OutputGenerator(program);
-                generator.Print();
+                Console.WriteLine(generator.Print());
             }
         }
 
